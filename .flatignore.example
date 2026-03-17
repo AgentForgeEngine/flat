@@ -1,0 +1,91 @@
+# Example .flatignore file for flat tool
+
+# Comments start with #
+# These files/directories will be excluded from flattening
+
+# Binary files
+*.bin
+*.exe
+*.dll
+*.so
+*.dylib
+*.app
+*.pkg
+*.dmg
+
+# Archive files
+*.zip
+*.tar
+*.gz
+*.7z
+*.rar
+*.iso
+*.img
+
+# Image files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.svg
+*.ico
+*.webp
+*.tiff
+
+# Video files
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.wmv
+*.flv
+*.webm
+
+# Audio files
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.m4a
+
+# Node modules
+node_modules/
+yarn.lock
+package-lock.json
+
+# Git
+.git/
+.gitignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+out/
+target/
+*.o
+*.a
+*.lib
+
+# Environment files
+.env
+.env.local
+*.secret
+*.key
+*.pem
+*.cert
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
