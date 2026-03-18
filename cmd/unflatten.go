@@ -16,37 +16,37 @@ import (
 	"flat/format"
 	"flat/hash"
 	"flat/metadata"
+	"github.com/spf13/cobra"
 )
 
-// UnflattenCommand represents the unflatten command
-type UnflattenCommand struct {
-	Name       string
-	Short      string
-	Long       string
-	Run        func(*config.Config, []string) error
-	Cfg        *config.Config
-	JustAgents bool
-}
+// UnflattenCmd creates the unflatten command
+func UnflattenCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "unflatten <input.fmdx> <destination-dir>",
+		Short: "Unflatten a .fmdx file into a directory structure",
+		Long:  "Unflatten a .fmdx file into a directory structure.",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 2 {
+				cmd.Printf("unflatten requires <input.fmdx> <destination-dir>\n")
+				cmd.Printf("Flags:\n")
+				cmd.Printf("  -v, --verbose           verbose output\n")
+				cmd.Printf("      --bypass-checksum   skip checksum verification\n")
+				cmd.Printf("      --just-agents       only unpack directories and AGENTS.yaml files\n")
+				return
+			}
 
-// Execute runs the unflatten command
-func (c *UnflattenCommand) Execute(args []string) error {
-	// Parse flags
-	for i := 2; i < len(args); i++ {
-		switch args[i] {
-		case "--just-agents":
-			c.JustAgents = true
-			// Remove flag from args
-			args = append(args[:i], args[i+1:]...)
-			i--
-		}
+			if err := Unflatten(cfg, args); err != nil {
+				cmd.Printf("Error: %v\n", err)
+				os.Exit(1)
+			}
+		},
 	}
 
-	// Need at least 2 args (input.fmdx + destination-dir)
-	// Additional args can be flags
-	if len(args) < 2 {
-		return fmt.Errorf("unflatten requires <input.fmdx> <destination-dir>")
-	}
-	return c.Run(c.Cfg, args)
+	cmd.Flags().BoolVarP(&cfg.Verbose, "verbose", "v", false, "verbose output")
+	cmd.Flags().BoolVar(&cfg.BypassChecksum, "bypass-checksum", false, "skip checksum verification")
+	cmd.Flags().BoolVar(&cfg.JustAgents, "just-agents", false, "only unpack directories and AGENTS.yaml files")
+
+	return cmd
 }
 
 // Unflatten runs the unflatten operation
@@ -303,17 +303,6 @@ func Unflatten(cfg *config.Config, args []string) error {
 	fmt.Printf("Time: %s\n", elapsed)
 
 	return nil
-}
-
-// UnflattenCmd returns the unflatten command
-func UnflattenCmd() *UnflattenCommand {
-	return &UnflattenCommand{
-		Name:  "unflatten",
-		Short: "Unflatten a .fmdx file into a directory structure",
-		Long:  "Unflatten a .fmdx file into a directory structure.",
-		Run:   Unflatten,
-		Cfg:   &config.Config{},
-	}
 }
 
 // unflattenJustAgents restores only directory metadata and AGENTS.yaml files

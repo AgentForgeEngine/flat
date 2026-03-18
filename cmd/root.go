@@ -6,117 +6,76 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"flat/config"
 	"flat/version"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
-	Verbose    bool
-	IgnoreFile string
+	cfg *config.Config
 )
 
-// Run executes the flat command
-func Run() error {
-	cfg := &config.Config{
-		Verbose:    Verbose,
-		IgnoreFile: IgnoreFile,
+// RootCmd represents the base command when called without any subcommands
+var RootCmd = &cobra.Command{
+	Use:   "flat",
+	Short: "Flat - Flatten directory trees into a single file",
+	Long: `flat is a tool for flattening directory trees into a single .fmdx file.
+It can also unflatten .fmdx files back into directory structures.`,
+	Version: version.Version,
+}
+
+func init() {
+	cobra.OnInitialize(initConfig)
+
+	if cfg == nil {
+		cfg = &config.Config{}
 	}
 
-	args := os.Args[1:]
+	RootCmd.PersistentFlags().BoolVarP(&cfg.Verbose, "verbose", "v", false, "verbose output")
+	RootCmd.PersistentFlags().StringVarP(&cfg.IgnoreFile, "ignore-file", "", ".flatignore", "ignore file path")
 
-	if len(args) == 0 {
-		// Default mode: check for .fmdx and auto-flatten if not present
-		cwd, err := os.Getwd()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
+	RootCmd.AddCommand(FlattenCmd())
+	RootCmd.AddCommand(UnflattenCmd())
+	RootCmd.AddCommand(VersionCmd())
+}
 
-		fmdxPath := filepath.Join(cwd, filepath.Base(cwd)+".fmdx")
+func initConfig() {
+	viper.SetConfigName(".flat")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("$HOME/.flat")
+	viper.AddConfigPath(".")
 
-		if _, err := os.Stat(fmdxPath); os.IsNotExist(err) {
-			fmt.Printf("Auto-flattening %s to %s\n", cwd, fmdxPath)
-			flattencmd := FlattenCmd()
-			flattencmd.Cfg = cfg
-			if err := flattencmd.Execute([]string{cwd, fmdxPath}); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-				os.Exit(1)
-			}
-			return nil
-		}
+	if err := viper.ReadInConfig(); err != nil {
+		// It's okay if there isn't a config file
+		return
+	}
 
-		fmt.Printf("Error: %s already exists. Use 'flat flatten' or 'flat unflatten'\n", filepath.Base(cwd)+".fmdx")
+	if cfg == nil {
+		cfg = &config.Config{}
+	}
+	viper.Unmarshal(cfg)
+}
+
+// Execute executes the root command
+func Execute() {
+	if err := RootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
 
-	switch args[0] {
-	case "flatten":
-		// Need at least 3 args (flatten + source-dir + output.fmdx)
-		// Additional args can be flags
-		if len(args) < 3 {
-			fmt.Println("Usage: flat flatten <source-dir> <output.fmdx>")
-			fmt.Println("Flags:")
-			fmt.Println("  -v, --verbose          verbose output")
-			fmt.Println("      --no-bin           skip binary files")
-			fmt.Println("      --external         external file references")
-			fmt.Println("      --exclude strings  exclude patterns")
-			fmt.Println("      --ignore-file      ignore file path (default \".flatignore\")")
-			fmt.Println("      --just-agents      only clean up .agents.yaml files")
-			return nil
-		}
-
-		flattencmd := FlattenCmd()
-		flattencmd.Cfg = cfg
-		for _, arg := range args[1:] {
-			if arg == "--just-agents" {
-				flattencmd.Cfg.JustAgents = true
-			}
-		}
-		if err := flattencmd.Execute(args[1:]); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-
-	case "unflatten":
-		// Need at least 3 args (unflatten + input.fmdx + dest_dir)
-		// Additional args can be flags
-		if len(args) < 3 {
-			fmt.Println("Usage: flat unflatten <input.fmdx> <destination-dir>")
-			fmt.Println("Flags:")
-			fmt.Println("  -v, --verbose           verbose output")
-			fmt.Println("      --bypass-checksum   skip checksum verification")
-			fmt.Println("      --just-agents       only unpack directories and AGENTS.yaml files")
-			return nil
-		}
-
-		unflattencmd := UnflattenCmd()
-		unflattencmd.Cfg = cfg
-		unflattencmd.Cfg.JustAgents = false
-		unflattencmd.Cfg.BypassChecksum = false
-		for _, arg := range args[1:] {
-			if arg == "--just-agents" || arg == "-j" {
-				unflattencmd.Cfg.JustAgents = true
-			}
-			if arg == "--bypass-checksum" {
-				unflattencmd.Cfg.BypassChecksum = true
-			}
-		}
-		if err := unflattencmd.Execute(args[1:]); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-
-	case "version":
-		fmt.Printf("flat version %s\n", version.Version)
-		fmt.Printf("Commit: %s\n", version.Commit)
-		fmt.Printf("Built: %s\n", version.Date)
-
-	default:
-		fmt.Printf("Unknown command: %s\n", args[0])
-		fmt.Println("Available commands: flatten, unflatten, version")
+// VersionCmd creates the version command
+func VersionCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Show version information",
+		Long:  "Show version information for flat.",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("flat version %s\n", version.Version)
+			fmt.Printf("Commit: %s\n", version.Commit)
+			fmt.Printf("Built: %s\n", version.Date)
+		},
 	}
-
-	return nil
 }

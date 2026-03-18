@@ -17,25 +17,43 @@ import (
 	"flat/format"
 	"flat/hash"
 	"flat/metadata"
+	"github.com/spf13/cobra"
 )
 
-// FlattenCommand represents the flatten command
-type FlattenCommand struct {
-	Name  string
-	Short string
-	Long  string
-	Run   func(*config.Config, []string) error
-	Cfg   *config.Config
-}
+// FlattenCmd creates the flatten command
+func FlattenCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "flatten <source-dir> <output.fmdx>",
+		Short: "Flatten a directory tree into a .fmdx file",
+		Long:  "Flatten a directory tree into a single .fmdx file.",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 2 {
+				cmd.Printf("flatten requires <source-dir> <output.fmdx>\n")
+				cmd.Printf("Flags:\n")
+				cmd.Printf("  -v, --verbose          verbose output\n")
+				cmd.Printf("      --no-bin           skip binary files\n")
+				cmd.Printf("      --external         external file references\n")
+				cmd.Printf("      --exclude strings  exclude patterns\n")
+				cmd.Printf("      --ignore-file      ignore file path (default \".flatignore\")\n")
+				cmd.Printf("      --just-agents      only clean up .agents.yaml files\n")
+				return
+			}
 
-// Execute runs the flatten command
-func (c *FlattenCommand) Execute(args []string) error {
-	// Need at least 2 args (source-dir + output.fmdx)
-	// Additional args can be flags
-	if len(args) < 2 {
-		return fmt.Errorf("flatten requires <source-dir> <output.fmdx>")
+			if err := Flatten(cfg, args); err != nil {
+				cmd.Printf("Error: %v\n", err)
+				os.Exit(1)
+			}
+		},
 	}
-	return c.Run(c.Cfg, args)
+
+	cmd.Flags().BoolVarP(&cfg.Verbose, "verbose", "v", false, "verbose output")
+	cmd.Flags().BoolVar(&cfg.NoBin, "no-bin", false, "skip binary files")
+	cmd.Flags().BoolVar(&cfg.External, "external", false, "external file references")
+	cmd.Flags().StringSliceVar(&cfg.Exclude, "exclude", []string{}, "exclude patterns")
+	cmd.Flags().StringVar(&cfg.IgnoreFile, "ignore-file", ".flatignore", "ignore file path")
+	cmd.Flags().BoolVar(&cfg.JustAgents, "just-agents", false, "only clean up .agents.yaml files")
+
+	return cmd
 }
 
 // Flatten runs the flatten operation
@@ -351,15 +369,4 @@ func Flatten(cfg *config.Config, args []string) error {
 	fmt.Printf("Time: %s\n", elapsed)
 
 	return nil
-}
-
-// FlattenCmd returns the flatten command
-func FlattenCmd() *FlattenCommand {
-	return &FlattenCommand{
-		Name:  "flatten",
-		Short: "Flatten a directory tree into a .fmdx file",
-		Long:  "Flatten a directory tree into a single .fmdx file.",
-		Run:   Flatten,
-		Cfg:   &config.Config{},
-	}
 }
