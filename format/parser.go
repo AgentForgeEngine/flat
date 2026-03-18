@@ -9,10 +9,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	DirectoryEnd = "!--~---~END-DIRECTORY~--~---!"
-)
-
 // DirectoryEntry represents a directory entry in the .fmdx
 type DirectoryEntry struct {
 	Metadata *DirectoryMetadata
@@ -61,18 +57,14 @@ func (r *FileReader) ParseAllEntries() ([]*FileEntry, error) {
 
 	// First entry: scanner is positioned after BEGIN marker (consumed by ValidateHeader)
 	for {
-		// Look for next entry (BEGIN marker or directory metadata)
+		// Look for next file entry (file_hash line)
 		if !r.scanner.Scan() {
 			break
 		}
 		line := r.scanner.Text()
 
-		if line == HeaderStart {
-			// File entry - parse it
-			// Scanner is already positioned after BEGIN marker, so we need to read from here
-			// But parseEntry expects to read hashes block first, which includes BEGIN marker
-			// So we need a different approach - push the line back and call parseEntry
-			// Since scanner doesn't support Unscan, we'll read the entry manually
+		if strings.HasPrefix(line, "file_hash:") {
+			// File entry - parse it starting from this line
 			entry, err := r.parseEntryFromLine(line)
 			if err != nil {
 				return nil, err
@@ -81,9 +73,7 @@ func (r *FileReader) ParseAllEntries() ([]*FileEntry, error) {
 				entries = append(entries, entry)
 			}
 		} else if strings.HasPrefix(line, "path:") || strings.HasPrefix(line, "type:") {
-			// Could be directory entry - try to parse it
-			// For now, skip directory entries in this function
-			// They'll be handled separately
+			// Could be directory entry - skip for now
 			continue
 		} else {
 			// Unknown line, skip
@@ -268,19 +258,22 @@ func (r *FileReader) readContentBlock() (string, error) {
 		line := r.scanner.Text()
 
 		// Check for content end delimiter
-		if strings.TrimSpace(line) == FileContentEnd {
+		if strings.TrimSpace(line) == ContentEnd {
 			break
 		}
 
-		contentBuilder.WriteString(line + "\n")
-
-		if !r.scanner.Scan() {
-			// End of file without section delimiter - this is OK for the last file
-			break
+		// Skip empty lines (they're added by Fprintln after content)
+		if line == "" {
+			continue
 		}
+
+		if contentBuilder.Len() > 0 {
+			contentBuilder.WriteString("\n")
+		}
+		contentBuilder.WriteString(line)
 	}
 
-	return strings.TrimSpace(contentBuilder.String()), nil
+	return contentBuilder.String(), nil
 }
 
 // FileEntry represents a single file entry in the .fmdx
@@ -300,25 +293,25 @@ func (r *FileReader) ParseAllDirectories() ([]*DirectoryEntry, error) {
 		return nil, err
 	}
 	defer f.Close()
-	
+
 	scanner := bufio.NewScanner(f)
-	
+
 	// Skip header
 	for scanner.Scan() {
 		if strings.TrimSpace(scanner.Text()) == HeaderEnd {
 			break
 		}
 	}
-	
+
 	// Parse entries
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		if strings.HasPrefix(line, "path:") || strings.HasPrefix(line, "type:") {
 			// Directory entry
 			var yamlContent strings.Builder
 			yamlContent.WriteString(line + "\n")
-			
+
 			for scanner.Scan() {
 				line := scanner.Text()
 				if strings.TrimSpace(line) == DirectoryEnd {
@@ -326,19 +319,19 @@ func (r *FileReader) ParseAllDirectories() ([]*DirectoryEntry, error) {
 				}
 				yamlContent.WriteString(line + "\n")
 			}
-			
+
 			var dirMeta DirectoryMetadata
 			err := yaml.Unmarshal([]byte(yamlContent.String()), &dirMeta)
 			if err != nil {
 				// Skip invalid entries
 				continue
 			}
-			
+
 			dirEntries = append(dirEntries, &DirectoryEntry{
 				Metadata: &dirMeta,
 			})
 		}
 	}
-	
+
 	return dirEntries, scanner.Err()
 }

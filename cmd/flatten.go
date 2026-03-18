@@ -60,6 +60,10 @@ func Flatten(cfg *config.Config, args []string) error {
 		return fmt.Errorf("failed to parse ignore file: %w", err)
 	}
 
+	// Add automatic ignore patterns
+	ignoreParser.AddPattern(".agents.yaml")
+	ignoreParser.AddPattern("*.fmdx")
+
 	// Create output file writer
 	writer, err := format.NewWriter(outputPath)
 	if err != nil {
@@ -208,21 +212,32 @@ func Flatten(cfg *config.Config, args []string) error {
 				return nil
 			}
 
+			// Check if text file ends with newline
+			endsWithNewline := false
+			if meta.ContentType == "text/plain" && len(content) > 0 {
+				endsWithNewline = (content[len(content)-1] == '\n')
+				// Add trailing newline if missing (for consistency)
+				if !endsWithNewline {
+					content = append(content, '\n')
+				}
+			}
+
 			// Compute hashes for content
 			contentHash := hash.ComputeAllHashes(content)
 
 			flatMeta = &format.Metadata{
-				Path:        relPath,
-				Filename:    meta.Filename,
-				Mode:        meta.Mode,
-				Modified:    meta.Modified.Format(time.RFC3339),
-				Created:     meta.Created.Format(time.RFC3339),
-				Symlink:     "",
-				Xattrs:      meta.Xattrs,
-				ContentType: meta.ContentType,
-				IsExternal:  false,
-				UID:         meta.UID,
-				GID:         meta.GID,
+				Path:           relPath,
+				Filename:       meta.Filename,
+				Mode:           meta.Mode,
+				Modified:       meta.Modified.Format(time.RFC3339),
+				Created:        meta.Created.Format(time.RFC3339),
+				Symlink:        "",
+				Xattrs:         meta.Xattrs,
+				ContentType:    meta.ContentType,
+				IsExternal:     false,
+				UID:            meta.UID,
+				GID:            meta.GID,
+				EndWithNewline: endsWithNewline,
 			}
 
 			// Encode content based on content type

@@ -22,24 +22,24 @@ type DirectoryMetadata struct {
 	Modified string `yaml:"modified"`
 }
 
-// CollectDirectory gathers metadata for a directory with .agent file
+// CollectDirectory gathers metadata for a directory with .agents.yaml file
 func CollectDirectory(dirPath string, relPath string) (*DirectoryMetadata, error) {
 	stat, err := os.Lstat(dirPath)
 	if err != nil {
 		return nil, err
 	}
 
-	// Read .agent file
-	agentPath := filepath.Join(dirPath, ".agent")
+	// Read .agents.yaml file
+	agentPath := filepath.Join(dirPath, ".agents.yaml")
 	agentContent, err := os.ReadFile(agentPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read .agent: %w", err)
+		return nil, fmt.Errorf("failed to read .agents.yaml: %w", err)
 	}
 
 	// Parse YAML
 	var dirMeta DirectoryMetadata
 	if err := yaml.Unmarshal(agentContent, &dirMeta); err != nil {
-		return nil, fmt.Errorf("failed to parse .agent: %w", err)
+		return nil, fmt.Errorf("failed to parse .agents.yaml: %w", err)
 	}
 
 	// Validate path
@@ -54,7 +54,7 @@ func CollectDirectory(dirPath string, relPath string) (*DirectoryMetadata, error
 
 	// Validate summary
 	if dirMeta.Summary == "" {
-		return nil, fmt.Errorf("summary is required in .agent")
+		return nil, fmt.Errorf("summary is required in .agents.yaml")
 	}
 
 	// Check summary size
@@ -80,7 +80,7 @@ func CollectDirectory(dirPath string, relPath string) (*DirectoryMetadata, error
 	return &dirMeta, nil
 }
 
-// ReadFlatdir reads and validates a .agent file
+// ReadFlatdir reads and validates a .agents.yaml file
 func ReadFlatdir(agentPath string) (*DirectoryMetadata, error) {
 	content, err := os.ReadFile(agentPath)
 	if err != nil {
@@ -89,7 +89,7 @@ func ReadFlatdir(agentPath string) (*DirectoryMetadata, error) {
 
 	var dirMeta DirectoryMetadata
 	if err := yaml.Unmarshal(content, &dirMeta); err != nil {
-		return nil, fmt.Errorf("failed to parse .agent: %w", err)
+		return nil, fmt.Errorf("failed to parse .agents.yaml: %w", err)
 	}
 
 	// Validate required fields
@@ -111,20 +111,20 @@ func ReadFlatdir(agentPath string) (*DirectoryMetadata, error) {
 	return &dirMeta, nil
 }
 
-// WriteFlatdir writes a .agent file with directory summary
+// WriteFlatdir writes a .agents.yaml file with directory summary
 func WriteFlatdir(dirPath string, summary string) error {
-	agentPath := filepath.Join(dirPath, ".agent")
+	agentPath := filepath.Join(dirPath, ".agents.yaml")
 
 	content, err := yaml.Marshal(DirectoryMetadata{
 		Type:    "directory",
 		Summary: summary,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to marshal .agent: %w", err)
+		return fmt.Errorf("failed to marshal .agents.yaml: %w", err)
 	}
 
 	if err := os.WriteFile(agentPath, content, 0644); err != nil {
-		return fmt.Errorf("failed to write .agent: %w", err)
+		return fmt.Errorf("failed to write .agents.yaml: %w", err)
 	}
 
 	return nil
@@ -158,14 +158,14 @@ func WriteAgents(dirPath string, dirMeta *DirectoryMetadata) error {
 	return nil
 }
 
-// HasFlatdir checks if a directory has a .agent file
+// HasFlatdir checks if a directory has a .agents.yaml file
 func HasFlatdir(dirPath string) bool {
-	agentPath := filepath.Join(dirPath, ".agent")
+	agentPath := filepath.Join(dirPath, ".agents.yaml")
 	_, err := os.Stat(agentPath)
 	return err == nil
 }
 
-// FindFlatdirs recursively finds all directories with .agent files
+// FindFlatdirs recursively finds all directories with .agents.yaml files
 func FindFlatdirs(rootPath string) ([]string, error) {
 	var agents []string
 

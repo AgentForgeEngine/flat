@@ -8,13 +8,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	HeaderStart    = "!--~---~BEGIN-FLAT-FILE-MULTI~--~---!"
-	HeaderEnd      = "!--~---~END-HEADER~--~---!"
-	MetadataEnd    = "!--~---~END-METADATA~--~---!"
-	FileContentEnd = "!--~---~END-FILE-CONTENT~--~---!"
-)
-
 // FileWriter handles writing .fmdx files
 type FileWriter struct {
 	outputPath string
@@ -153,25 +146,26 @@ func (w *FileWriter) writeContentBlock(content string) error {
 		return err
 	}
 
-	_, err = fmt.Fprintln(w.writer, FileContentEnd)
+	_, err = fmt.Fprintln(w.writer, ContentEnd)
 	return err
 }
 
 // Metadata represents a file entry in the .fmdx format
 type Metadata struct {
-	Path         string            `yaml:"path"`
-	Filename     string            `yaml:"filename"`
-	Mode         string            `yaml:"mode"`
-	Modified     string            `yaml:"modified"`
-	Created      string            `yaml:"created"`
-	Symlink      string            `yaml:"symlink"`
-	Xattrs       map[string]string `yaml:"xattrs"`
-	ContentType  string            `yaml:"content_type"`
-	IsExternal   bool              `yaml:"is_external"`
-	ExternalPath string            `yaml:"external_path"`
-	BlockHash    string            `yaml:"mdx_block_hash"`
-	UID          int               `yaml:"uid,omitempty"`
-	GID          int               `yaml:"gid,omitempty"`
+	Path           string            `yaml:"path"`
+	Filename       string            `yaml:"filename"`
+	Mode           string            `yaml:"mode"`
+	Modified       string            `yaml:"modified"`
+	Created        string            `yaml:"created"`
+	Symlink        string            `yaml:"symlink"`
+	Xattrs         map[string]string `yaml:"xattrs"`
+	ContentType    string            `yaml:"content_type"`
+	IsExternal     bool              `yaml:"is_external"`
+	ExternalPath   string            `yaml:"external_path"`
+	BlockHash      string            `yaml:"mdx_block_hash"`
+	UID            int               `yaml:"uid,omitempty"`
+	GID            int               `yaml:"gid,omitempty"`
+	EndWithNewline bool              `yaml:"end_with_newline"`
 }
 
 // HashResult holds hash values

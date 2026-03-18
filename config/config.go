@@ -13,6 +13,7 @@ type Config struct {
 	Exclude        []string
 	IgnoreFile     string
 	BypassChecksum bool
+	JustAgents     bool
 }
 
 // LoadConfig loads configuration from environment variables and defaults
@@ -58,4 +59,9 @@ func (c *Config) SetIgnoreFile(path string) {
 // SetBypassChecksum sets checksum bypass flag
 func (c *Config) SetBypassChecksum(v bool) {
 	c.BypassChecksum = v
+}
+
+// SetJustAgents sets just-agents mode
+func (c *Config) SetJustAgents(v bool) {
+	c.JustAgents = v
 }

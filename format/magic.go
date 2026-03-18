@@ -25,6 +25,21 @@ var magicSignatures = []MagicByte{
 	{Signature: []byte("RIFF"), MIMEType: "audio/wav"},
 }
 
+// Format markers
+const (
+	HeaderStart    = "!--~---~BEGIN-FLAT-FILE-MULTI~--~---!"
+	HeaderEnd      = "!--~---~END-HEADER~--~---!"
+	HeaderBegin    = "!--~---~BEGIN-HEADER~--~---!"
+	FileBegin      = "!--~---~BEGIN-FILE~--~---!"
+	FileEnd        = "!--~---~END-FILE~--~---!"
+	MetadataBegin  = "!--~---~BEGIN-METADATA~--~---!"
+	MetadataEnd    = "!--~---~END-METADATA~--~---!"
+	ContentBegin   = "!--~---~BEGIN-FILE-CONTENT~--~---!"
+	ContentEnd     = "!--~---~END-FILE-CONTENT~--~---!"
+	DirectoryBegin = "!--~---~BEGIN-DIRECTORY~--~---!"
+	DirectoryEnd   = "!--~---~END-DIRECTORY~--~---!"
+)
+
 // IsBinary detects if a file is binary using magic bytes and extension
 func IsBinary(filepath string) (bool, string) {
 	// First check file extension

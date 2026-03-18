@@ -63,11 +63,17 @@ func Run() error {
 			fmt.Println("      --external         external file references")
 			fmt.Println("      --exclude strings  exclude patterns")
 			fmt.Println("      --ignore-file      ignore file path (default \".flatignore\")")
+			fmt.Println("      --just-agents      only clean up .agents.yaml files")
 			return nil
 		}
 
 		flattencmd := FlattenCmd()
 		flattencmd.Cfg = cfg
+		for _, arg := range args[1:] {
+			if arg == "--just-agents" {
+				flattencmd.Cfg.JustAgents = true
+			}
+		}
 		if err := flattencmd.Execute(args[1:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
@@ -81,11 +87,22 @@ func Run() error {
 			fmt.Println("Flags:")
 			fmt.Println("  -v, --verbose           verbose output")
 			fmt.Println("      --bypass-checksum   skip checksum verification")
+			fmt.Println("      --just-agents       only unpack directories and AGENTS.yaml files")
 			return nil
 		}
 
 		unflattencmd := UnflattenCmd()
 		unflattencmd.Cfg = cfg
+		unflattencmd.Cfg.JustAgents = false
+		unflattencmd.Cfg.BypassChecksum = false
+		for _, arg := range args[1:] {
+			if arg == "--just-agents" || arg == "-j" {
+				unflattencmd.Cfg.JustAgents = true
+			}
+			if arg == "--bypass-checksum" {
+				unflattencmd.Cfg.BypassChecksum = true
+			}
+		}
 		if err := unflattencmd.Execute(args[1:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)

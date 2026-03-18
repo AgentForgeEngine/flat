@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,15 +20,27 @@ import (
 
 // UnflattenCommand represents the unflatten command
 type UnflattenCommand struct {
-	Name  string
-	Short string
-	Long  string
-	Run   func(*config.Config, []string) error
-	Cfg   *config.Config
+	Name       string
+	Short      string
+	Long       string
+	Run        func(*config.Config, []string) error
+	Cfg        *config.Config
+	JustAgents bool
 }
 
 // Execute runs the unflatten command
 func (c *UnflattenCommand) Execute(args []string) error {
+	// Parse flags
+	for i := 2; i < len(args); i++ {
+		switch args[i] {
+		case "--just-agents":
+			c.JustAgents = true
+			// Remove flag from args
+			args = append(args[:i], args[i+1:]...)
+			i--
+		}
+	}
+
 	// Need at least 2 args (input.fmdx + destination-dir)
 	// Additional args can be flags
 	if len(args) < 2 {
@@ -63,10 +76,51 @@ func Unflatten(cfg *config.Config, args []string) error {
 		return fmt.Errorf("invalid .fmdx file: %w", err)
 	}
 
-	// Parse all entries
+	// Just agents mode: only restore directory metadata
+	if cfg.JustAgents {
+		return unflattenJustAgents(reader, destDir, cfg.Verbose)
+	}
+
+	// Parse all entries (including directories)
 	entries, err := reader.ParseAllEntries()
 	if err != nil {
 		return fmt.Errorf("failed to parse .fmdx file: %w", err)
+	}
+
+	// Also parse directory entries for AGENTS.yaml files
+	dirs, err := reader.ParseAllDirectories()
+	if err != nil {
+		return fmt.Errorf("failed to parse directory entries: %w", err)
+	}
+
+	// Write AGENTS.yaml for each directory
+	for _, dirEntry := range dirs {
+		agentsPath := filepath.Join(destDir, dirEntry.Metadata.Path, "AGENTS.yaml")
+		parentDir := filepath.Dir(agentsPath)
+		if err := os.MkdirAll(parentDir, 0755); err != nil {
+			if cfg.Verbose {
+				fmt.Printf("Warning: Could not create directory %s: %v\n", parentDir, err)
+			}
+			continue
+		}
+
+		metaDirMeta := &metadata.DirectoryMetadata{
+			Path:     dirEntry.Metadata.Path,
+			Type:     dirEntry.Metadata.Type,
+			Summary:  dirEntry.Metadata.Summary,
+			Created:  dirEntry.Metadata.Created,
+			Modified: dirEntry.Metadata.Modified,
+		}
+		if err := metadata.WriteAgents(parentDir, metaDirMeta); err != nil {
+			if cfg.Verbose {
+				fmt.Printf("Warning: Could not write AGENTS.yaml: %v\n", err)
+			}
+			continue
+		}
+
+		if cfg.Verbose {
+			fmt.Printf("Created AGENTS.yaml: %s\n", dirEntry.Metadata.Path)
+		}
 	}
 
 	// Check for platform mismatch (from first file's header)
@@ -172,6 +226,16 @@ func Unflatten(cfg *config.Config, args []string) error {
 			mode = 0644
 		}
 
+		// Handle trailing newlines for text files
+		if metadata.IsTextFile(entry.Metadata.ContentType) && len(content) > 0 {
+			hasNewline := bytes.HasSuffix(content, []byte("\n"))
+			if entry.Metadata.EndWithNewline && !hasNewline {
+				content = append(content, '\n')
+			} else if !entry.Metadata.EndWithNewline && hasNewline {
+				content = content[:len(content)-1]
+			}
+		}
+
 		if err := os.WriteFile(destPath, content, mode); err != nil {
 			if cfg.Verbose {
 				fmt.Printf("  Warning: Could not write file: %v\n", err)
@@ -233,6 +297,7 @@ func Unflatten(cfg *config.Config, args []string) error {
 	elapsed := time.Since(startTime)
 	fmt.Printf("\nUnflattening complete!\n")
 	fmt.Printf("Total entries: %d\n", len(entries))
+	fmt.Printf("Directory entries: %d\n", len(dirs))
 	fmt.Printf("Skipped (external): %d\n", skippedExcluded)
 	fmt.Printf("Restored: %d\n", restoredFiles)
 	fmt.Printf("Time: %s\n", elapsed)
@@ -249,6 +314,71 @@ func UnflattenCmd() *UnflattenCommand {
 		Run:   Unflatten,
 		Cfg:   &config.Config{},
 	}
+}
+
+// unflattenJustAgents restores only directory metadata and AGENTS.yaml files
+func unflattenJustAgents(reader *format.FileReader, destDir string, verbose bool) error {
+	if verbose {
+		fmt.Printf("Restoring directory metadata only to %s\n", destDir)
+	}
+
+	// Parse all directory entries
+	dirs, err := reader.ParseAllDirectories()
+	if err != nil {
+		return fmt.Errorf("failed to parse directory entries: %w", err)
+	}
+
+	var restored int
+	var startTime = time.Now()
+
+	// Process each directory entry
+	for i, dirEntry := range dirs {
+		if verbose {
+			fmt.Printf("[%d/%d] Processing directory: %s\n", i+1, len(dirs), dirEntry.Metadata.Path)
+		}
+
+		// Calculate destination path for AGENTS.yaml
+		agentsPath := filepath.Join(destDir, dirEntry.Metadata.Path, "AGENTS.yaml")
+
+		// Create parent directory
+		parentDir := filepath.Dir(agentsPath)
+		if err := os.MkdirAll(parentDir, 0755); err != nil {
+			if verbose {
+				fmt.Printf("  Warning: Could not create directory %s: %v\n", parentDir, err)
+			}
+			continue
+		}
+
+		// Write AGENTS.yaml (convert from format.DirectoryMetadata to metadata.DirectoryMetadata)
+		metaDirMeta := &metadata.DirectoryMetadata{
+			Path:     dirEntry.Metadata.Path,
+			Type:     dirEntry.Metadata.Type,
+			Summary:  dirEntry.Metadata.Summary,
+			Created:  dirEntry.Metadata.Created,
+			Modified: dirEntry.Metadata.Modified,
+		}
+		if err := metadata.WriteAgents(parentDir, metaDirMeta); err != nil {
+			if verbose {
+				fmt.Printf("  Warning: Could not write AGENTS.yaml: %v\n", err)
+			}
+			continue
+		}
+
+		restored++
+
+		if verbose {
+			fmt.Printf("  Restored: %s\n", dirEntry.Metadata.Path)
+		}
+	}
+
+	// Summary
+	elapsed := time.Since(startTime)
+	fmt.Printf("\nJust-agents restore complete!\n")
+	fmt.Printf("Directory entries: %d\n", len(dirs))
+	fmt.Printf("Restored: %d\n", restored)
+	fmt.Printf("Time: %s\n", elapsed)
+
+	return nil
 }
 
 // parseMode parses mode string (e.g., "0644" or "-rw-r--r--") to os.FileMode
