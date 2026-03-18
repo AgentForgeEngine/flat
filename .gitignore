@@ -1,10 +1,21 @@
 # Build artifacts
 flat
 flat-*
+flat.exe
+
+# Go build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
 
 # Coverage
 coverage.out
 coverage.html
+
+# Test data
+test/data/*
+!test/data/README.md
 
 # IDE
 .idea/

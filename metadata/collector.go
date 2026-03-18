@@ -4,6 +4,8 @@ import (
 	"os"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 // Metadata holds all POSIX metadata for a file
@@ -19,6 +21,8 @@ type Metadata struct {
 	IsExternal   bool              `yaml:"is_external"`
 	ExternalPath string            `yaml:"external_path"`
 	BlockHash    string            `yaml:"mdx_block_hash"`
+	UID          int               `yaml:"uid,omitempty"`
+	GID          int               `yaml:"gid,omitempty"`
 }
 
 // Collect gathers all metadata for a file
@@ -50,6 +54,12 @@ func Collect(filepath string, relPath string) (*Metadata, error) {
 			return nil, err
 		}
 		metadata.Symlink = target
+	}
+
+	// Collect UID/GID from stat
+	if statSys, ok := stat.Sys().(*syscall.Stat_t); ok {
+		metadata.UID = int(statSys.Uid)
+		metadata.GID = int(statSys.Gid)
 	}
 
 	// Collect extended attributes
@@ -107,25 +117,64 @@ func getXattrs(filepath string) (map[string]string, error) {
 
 // listxattr lists all extended attributes for a file
 func listxattr(filepath string) ([]string, error) {
-	// Linux/macOS implementation
 	var attrs []string
 
-	// Try to get attribute list
-	// This is a simplified version - platform-specific code may be needed
-	// For now, return empty list (will be filled in tests)
+	// Get attribute list using unix.Listxattr - first call to get size
+	buf := make([]byte, 4096)
+	n, err := unix.Listxattr(filepath, buf)
+	if err != nil {
+		return attrs, err
+	}
+
+	if n <= 0 {
+		return attrs, nil
+	}
+
+	// Trim to actual size
+	buf = buf[:n]
+
+	attrs = make([]string, 0)
+	for i := 0; i < len(buf); {
+		for j := i; j < len(buf) && buf[j] != 0; j++ {
+			attrs = append(attrs, string(buf[i:j]))
+			i = j + 1
+		}
+		i++
+	}
+
 	return attrs, nil
 }
 
 // getxattr gets a single extended attribute value
 func getxattr(filepath, key string) ([]byte, error) {
-	// Platform-specific implementation
-	return []byte{}, nil
+	// Use unix.Getxattr to get extended attribute - first call to get size
+	buf := make([]byte, 4096)
+	n, err := unix.Getxattr(filepath, key, buf)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	if n <= 0 {
+		return []byte{}, nil
+	}
+
+	return buf[:n], nil
 }
 
 // setxattr sets an extended attribute on a file
 func setxattr(filepath, key string, value []byte) error {
-	// Platform-specific implementation
+	// Use unix.Setxattr to set extended attribute
+	err := unix.Setxattr(filepath, key, value, 0)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// SetXattr sets an extended attribute on a file (public wrapper)
+func SetXattr(filepath, key, value string) error {
+	return setxattr(filepath, key, []byte(value))
 }
 
 // detectContentType auto-detects MIME type based on file extension
@@ -201,4 +250,28 @@ func getFileExtension(filepath string) string {
 	}
 
 	return filepath[lastDot+1:]
+}
+
+// IsTextFile checks if a file is text-based based on content type
+func IsTextFile(contentType string) bool {
+	textTypes := map[string]bool{
+		"text/plain":                true,
+		"text/markdown":             true,
+		"text/x-go":                 true,
+		"text/x-python":             true,
+		"text/x-ruby":               true,
+		"text/x-rust":               true,
+		"text/x-c":                  true,
+		"text/x-c++":                true,
+		"text/x-c-header":           true,
+		"text/html":                 true,
+		"text/css":                  true,
+		"application/json":          true,
+		"application/yaml":          true,
+		"application/xml":           true,
+		"application/javascript":    true,
+		"application/sql":           true,
+		"application/x-shellscript": true,
+	}
+	return textTypes[contentType]
 }

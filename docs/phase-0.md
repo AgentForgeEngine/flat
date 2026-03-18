@@ -1,80 +1,123 @@
-# Phase 0: Flat Tool Specification
+# Phase 0: Flat File Format Specification
 
 ## Overview
 
-Flat is a CLI tool that flattens directory trees into a single `.fmdx` file and can unflatten them back. The tool is designed for:
+Flat uses a custom file format (`.fmdx`) to store directory trees with complete metadata preservation. The format uses **context-specific section delimiters** to avoid conflicts with content that might contain delimiter-like strings.
 
-- **Backup**: Capture complete directory structure with all metadata
-- **Transfer**: Move entire projects as a single file
-- **Version Control**: Store project state in a portable format
-- **External References**: Reference files without embedding content
-- **Binary Detection**: Optional filtering of binary files
-
-## Design Goals
-
-1. **Simplicity**: Default mode is just `flat` - no arguments needed
-2. **Safety**: SHA-256 checksums always verified on unflatten
-3. **Completeness**: Preserve all POSIX metadata (permissions, timestamps, symlinks, xattrs)
-4. **Portability**: Single file format that works across platforms
-5. **Performance**: Efficient hashing and encoding
-
-## Technology Stack
-
-- **Language**: Go (single binary, cross-platform, fast I/O)
-- **CLI Framework**: Cobra + Viper
-- **Checksum Algorithms**: SHA-256 (default), SHA-512, MD5, BLAKE2, CRC32
-- **Content Encoding**: Base64 for binary-safe storage
-- **Metadata Format**: YAML (human-readable within .fmdx)
-
-## File Format
+## Format Specification
 
 ### Structure
 
 ```
----BEGIN-FLAT-FILE-MULTI---
----
-mdx_block_hash: <sha256 of YAML metadata>
-file_hash: <sha256 of original content>
-content_type: <auto-detected MIME type>
----
----MDX---
----
-```yaml
-path: "relative/path/to/file"
-filename: "filename.ext"
+!--~---~BEGIN-FLAT-FILE-MULTI~--~---!
+mdx_block_hash: <sha256>
+file_hash: <sha256>
+content_type: <mime>
+!--~---~END-HEADER~--~---!
+path: "relative/path"
+filename: "name.ext"
 mode: "0644"
 modified: "2026-03-16T12:00:00Z"
 created: "2026-03-16T10:00:00Z"
-symlink: ""  # empty or contains target
-xattrs:
-  user.comment: "test"
+symlink: ""
+xattrs: {}
+content_type: "text/plain"
 is_external: false
 external_path: ""
----
-base64-encoded-file-content
----MDX---
----
-mdx_block_hash: <sha256 of YAML metadata>
-file_hash: <sha256 of original content>
-content_type: "application/octet-stream"
----
----MDX---
----
-```yaml
-path: "another/file.bin"
-...
----
-base64-encoded-binary-content
----MDX---
+mdx_block_hash: ""
+!--~---~END-METADATA~--~---!
+base64-encoded-content
+!--~---~END-FILE-CONTENT~--~---!
+```
+
+### Multi-File Example
+
+```
+!--~---~BEGIN-FLAT-FILE-MULTI~--~---!
+mdx_block_hash: <sha256>
+file_hash: <sha256>
+content_type: <mime>
+!--~---~END-HEADER~--~---!
+path: "file1.md"
+filename: "file1.md"
+mode: "0644"
+modified: "2026-03-16T12:00:00Z"
+created: "2026-03-16T10:00:00Z"
+symlink: ""
+xattrs: {}
+content_type: "text/markdown"
+is_external: false
+!--~---~END-METADATA~--~---!
+UyBGaWxlIDEgLSBDb250ZW50
+!--~---~END-FILE-CONTENT~--~---!
+!--~---~BEGIN-FLAT-FILE-MULTI~--~---!
+mdx_block_hash: <sha256>
+file_hash: <sha256>
+content_type: <mime>
+!--~---~END-HEADER~--~---!
+path: "file2.md"
+filename: "file2.md"
+mode: "0644"
+modified: "2026-03-16T12:00:00Z"
+created: "2026-03-16T10:00:00Z"
+symlink: ""
+xattrs: {}
+content_type: "text/markdown"
+is_external: false
+!--~---~END-METADATA~--~---!
+UyBGaWxlIDIgLSBDb250ZW50
+!--~---~END-FILE-CONTENT~--~---!
 ```
 
 ### Delimiters
 
-- **Header**: `---BEGIN-FLAT-FILE-MULTI---`
-- **MDX section**: `---MDX---`
-- **YAML wrapper**: `---` (on its own line)
+All delimiters follow the pattern `!--~---~...~--~---!`:
 
-### Metadata Fields
+| Delimiter | Purpose |
+|-----------|---------|
+| `!--~---~BEGIN-FLAT-FILE-MULTI~--~---!` | Marks start of .fmdx file |
+| `!--~---~END-HEADER~--~---!` | Marks end of header block (hashes and content type) |
+| `!--~---~END-METADATA~--~---!` | Marks end of file metadata block |
+| `!--~---~END-FILE-CONTENT~--~---!` | Marks end of file content, start of next entry |
+
+### Header Block
+
+Contains:
+- `mdx_block_hash`: SHA-256 hash of the metadata block
+- `file_hash`: SHA-256 hash of original file content
+- `content_type`: Auto-detected MIME type
+
+### Metadata Block
+
+Contains YAML with:
+- `path`: Relative path from source directory
+- `filename`: Base filename only
+- `mode`: Octal permissions (e.g., "0644")
+- `modified`: Last modification time (ISO 8601)
+- `created`: Creation time (if available)
+- `symlink`: Empty or symlink target path
+- `xattrs`: Extended attributes (user.* and security.*)
+- `content_type`: Auto-detected MIME type
+- `is_external`: True if external reference
+- `external_path`: Original path (for external refs)
+- `mdx_block_hash`: SHA-256 hash of metadata YAML block
+
+### Content Block
+
+- **Always base64 encoded** (prevents delimiter conflicts)
+- Can contain any characters
+- Decoded on unflatten
+
+## Why Context-Specific Delimiters?
+
+Using separate delimiters for each section boundary solves several problems:
+
+1. **No delimiter-in-content conflicts** - Each delimiter is unique
+2. **Content can contain any string** - No need for escaping
+3. **Clear parsing logic** - Parser knows which delimiter to expect
+4. **Future extensibility** - Easy to add new section types
+
+## Metadata Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -88,8 +131,9 @@ base64-encoded-binary-content
 | `content_type` | string | Auto-detected MIME type |
 | `is_external` | bool | True if external reference |
 | `external_path` | string | Original path (for external refs) |
+| `mdx_block_hash` | string | SHA-256 hash of metadata YAML block |
 
-### Hash Algorithms
+## Hash Algorithms
 
 All hashes are computed and stored:
 
@@ -100,6 +144,19 @@ All hashes are computed and stored:
 - **CRC32** (4 bytes) - Quick error detection
 
 Hashes are stored as hexadecimal strings.
+
+## Content Encoding
+
+All content is **always base64 encoded** to prevent:
+- Delimiter conflicts in content
+- Binary data corruption
+- Encoding issues with special characters
+- Whitespace preservation problems
+
+This means:
+- Text files are encoded (not stored as plain text)
+- Binary files are encoded (as before)
+- All content is safe for storage in .fmdx
 
 ## CLI Specification
 
@@ -114,217 +171,90 @@ flat
 - If `{cwd}.fmdx` does NOT exist: flatten current directory to `{cwd}.fmdx`
 - If `{cwd}.fmdx` EXISTS: error and require explicit command
 
-### Commands
+### Flatten Command
 
-#### `flat flatten <source-dir> <output.fmdx>`
-
-Flatten a directory tree into a single `.fmdx` file.
+```bash
+flat flatten <source-dir> <output.fmdx>
+```
 
 **Flags**:
 - `-v, --verbose`: Print progress output
-- `--no-bin`: Skip binary files (warn what was skipped)
-- `--external`: Store external references (path only, no content)
-- `--exclude <pattern>`: Exclude files matching pattern (can be repeated)
-- `--ignore-file <path>`: Path to `.flatignore` file (default: ".flatignore")
+- `--no-bin`: Skip binary files
+- `--external`: Store external references (path only)
+- `--exclude <pattern>`: Exclude files matching pattern
+- `--ignore-file <path>`: Path to .flatignore file
 
-**Example**:
+### Unflatten Command
+
 ```bash
-flat flatten ./src ./output.fmdx
-flat flatten -v --no-bin ./project ./backup.fmdx
+flat unflatten <input.fmdx> <destination-dir>
 ```
-
-#### `flat unflatten <input.fmdx> <destination-dir>`
-
-Unflatten a `.fmdx` file into a directory structure.
 
 **Flags**:
 - `-v, --verbose`: Print progress output
 - `--bypass-checksum`: Skip SHA-256 verification (not recommended)
 
-**Example**:
-```bash
-flat unflatten backup.fmdx ./restored
-flat unflatten -v project.fmdx ./output
-```
+### Version Command
 
-#### `flat version`
-
-Show version information.
-
-**Example**:
 ```bash
 flat version
 ```
 
-### Environment Variables
+Displays version information.
 
-- `FLAT_VERBOSE=true`: Enable verbose mode by default
+## .flatignore
 
-### Help Output
-
-```bash
-$ flat --help
-flat - Flatten/unflatten directory trees
-
-Usage:
-  flat [command]
-
-Available Commands:
-  flatten     Flatten a directory tree into a .fmdx file
-  unflatten   Unflatten a .fmdx file into a directory structure
-  version     Show version information
-
-Flags:
-  -h, --help   help for flat
-
-Use "flat [command] --help" for more information about a command.
-
-$ flat flatten --help
-flatten a directory tree into a .fmdx file
-
-Usage:
-  flat flatten <source-dir> <output.fmdx> [flags]
-
-Flags:
-  -v, --verbose          verbose output
-      --no-bin           skip binary files
-      --external         external file references
-      --exclude strings  exclude patterns
-      --ignore-file      ignore file path (default ".flatignore")
-  -h, --help             help for flatten
-```
-
-## File Filtering
-
-### Binary Detection
-
-Files are classified as binary or text using a combined approach:
-
-1. **Magic bytes** (primary): Check first bytes against known signatures
-   - PNG: `89 50 4E 47`
-   - JPEG: `FF D8 FF`
-   - GIF: `47 49 46 38`
-   - MP3: `ID3` or MPEG frame headers
-   - ZIP: `50 4B 03 04`
-   - ELF: `7F 45 4C 46`
-   - And many more...
-
-2. **File extension** (secondary): Cross-reference with common extensions
-   - Binary: `.png`, `.jpg`, `.mov`, `.mp4`, `.exe`, `.dll`, `.bin`, etc.
-   - Text: `.txt`, `.md`, `.go`, `.js`, `.py`, `.json`, `.yaml`, etc.
-
-If `--no-bin` is specified, binary files are skipped entirely.
-
-### Exclusion Patterns (`.flatignore`)
+Create a `.flatignore` file to exclude files:
 
 ```
 # Comments start with #
 *.bin
 *.exe
-*.dll
 node_modules/
 .git/
 .DS_Store
-vendor/
 dist/
 ```
 
-Pattern matching supports:
+### Pattern Matching
+
 - `*.ext` - Match extension
 - `dir/` - Match directory
 - `filename` - Exact filename match
 
-## Edge Cases
+## Examples
 
-### Empty Files
+### Backup Your Project
 
-- Zero-byte files are valid
-- Content section is empty string in base64
-- Hashes are computed on empty content
+```bash
+# Create backup
+flat flatten ./my-project ./my-project-backup.fmdx
 
-### Binary Files
-
-- Encoded as base64 for safe storage
-- MIME type auto-detected
-- `--no-bin` flag can skip them
-
-### Symlinks
-
-- Symlink target is stored (not dereferenced)
-- During unflatten: recreate as symlink with correct target
-- External references can be symlinks
-
-### Extended Attributes (xattrs)
-
-- User-defined attributes (`user.*`) are preserved
-- Security attributes (`security.*`) are preserved
-- Some systems may not support all xattrs (warn if not restored)
-
-### Permission Errors
-
-- If a file cannot be read: skip and warn
-- If a file cannot be written: error and stop
-
-### Special Characters in Filenames
-
-- Base64 encoding handles any characters
-- Path separators stored as forward slashes
-- Unicode characters handled correctly
-
-## Error Handling
-
-### During Flatten
-
-1. **Directory not found**: Error and exit
-2. **Permission denied**: Skip file, warn, continue
-3. **I/O error**: Skip file, warn, continue
-4. **Invalid .flatignore**: Warn but continue with default patterns
-
-### During Unflatten
-
-1. **Invalid .fmdx format**: Error and exit
-2. **Hash mismatch**: Error and exit (unless `--bypass-checksum`)
-3. **Directory not found**: Create parent directories
-4. **Permission error**: Skip file, warn, continue
-5. **External file missing**: No validation (user's responsibility)
-
-### Default Mode
-
-1. **No arguments**: Check for `{cwd}.fmdx`
-   - Missing: auto-flatten
-   - Exists: error and require explicit command
-
-## Directory Structure
-
+# Later, restore it
+flat unflatten my-project-backup.fmdx ./restored
 ```
-flat/
-├── main.go              # Entry point + default mode logic
-├── cmd/
-│   ├── flatten.go       # flat flatten <src> <output>
-│   ├── unflatten.go     # flat unflatten <input> <dest>
-│   └── version.go       # flat version
-├── config/
-│   └── config.go        # Config struct + env var parsing
-├── format/
-│   ├── writer.go        # Write .fmdx file format
-│   ├── parser.go        # Parse .fmdx file format
-│   ├── magic.go         # Binary detection (magic bytes + extension)
-│   ├── mime.go          # Auto-detect MIME types
-│   └── ignore.go        # .flatignore pattern matching
-├── hash/
-│   └── hash.go          # SHA-256, SHA-512, MD5, BLAKE2, CRC32
-├── metadata/
-│   └── collector.go     # Collect POSIX metadata
-├── encoder/
-│   └── base64.go        # Base64 encode/decode
-├── .flatignore.example  # Example ignore file
-├── go.mod               # Go module
-├── go.sum               # Dependencies
-├── README.md            # Documentation
-└── docs/
-    ├── phase-0.md       # This file
-    ├── phase-1.md       # Phase 1 implementation
-    └── phase-2.md       # Phase 2 implementation
+
+### Transfer Project
+
+```bash
+# On source machine
+cd /path/to/project
+flat flatten . ./project.fmdx
+
+# Copy and restore
+scp project.fmdx user@destination:/tmp/
+flat unflatten /tmp/project.fmdx ./project
+```
+
+### Exclude Large Files
+
+```bash
+# Create .flatignore
+echo "large_files/" > .flatignore
+echo "*.bin" >> .flatignore
+
+# Flatten with exclusions
+flat flatten ./project ./backup.fmdx
 ```
 
 ## Testing Strategy
@@ -343,8 +273,8 @@ flat/
    - Extended attributes
 
 3. **Binary handling**
-   - Text files (no change)
-   - Binary files (base64 encode/decode)
+   - Text files (base64 encoded)
+   - Binary files (base64 encoded)
    - Mixed content
 
 4. **Edge cases**
@@ -392,8 +322,8 @@ go 1.21
 require (
     github.com/spf13/cobra v1.8.0
     github.com/spf13/viper v1.18.2
-    golang.org/x/crypto v0.17.0  // BLAKE2
-    golang.org/x/text v0.14.0    // MIME detection
+    golang.org/x/crypto v0.17.0  # BLAKE2
+    golang.org/x/text v0.14.0    # MIME detection
 )
 ```
 
@@ -422,7 +352,6 @@ Version format: `0.x.y`
 - Compression (gzip/zstd) for smaller .fmdx files
 - Incremental backups (compare with previous .fmdx)
 - Encryption (optional AES-256 encryption)
-- Compression of base64 content
 - Multi-file .fmdx (split large projects)
 - Web UI for visualization
 - Diff mode (show changes between .fmdx files)
@@ -432,5 +361,37 @@ Version format: `0.x.y`
 1. **SHA-256 is always verified** on unflatten unless `--bypass-checksum` is used
 2. **All 5 hash types are computed** but only SHA-256 is required for verification
 3. **External references** are stored as paths only (no content in .fmdx)
-4. **Binary files** can be skipped with `--no-bin` flag
+4. **Binary files** are always base64 encoded (as are all files now)
 5. **Default mode** is `flat` alone - auto-flatten if no .fmdx exists
+6. **No YAML wrapper lines** - Direct delimiter-to-delimiter structure
+
+## Implementation Phases
+
+### Phase 0: Specification ✅ [COMPLETE]
+- [x] Format definition
+- [x] CLI specification
+- [x] Edge cases documentation
+- [x] Context-specific delimiter format
+- [x] No YAML wrapper lines
+
+### Phase 1: Core Implementation ✅ [COMPLETE]
+- [x] Go module setup
+- [x] Hash computation (5 algorithms)
+- [x] Format parser/writer
+- [x] Base64 encoder (always encode)
+- [x] Metadata collector
+- [x] Binary detection (for --no-bin flag)
+- [x] Ignore pattern matching
+
+### Phase 2: Commands ✅ [COMPLETE]
+- [x] Flatten command
+- [x] Unflatten command
+- [x] Version command
+- [x] Checksum verification
+- [x] Error handling
+
+### Phase 3: Finalization ✅ [COMPLETE]
+- [x] Testing suite
+- [x] Documentation
+- [x] Release preparation
+- [x] Performance optimization

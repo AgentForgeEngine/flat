@@ -44,7 +44,7 @@ node_modules/
 
 func TestShouldIgnore_ExactMatch(t *testing.T) {
 	parser := &IgnoreParser{
-		patterns: []string{"README.md", "LICENSE", "Makefile"},
+		patterns: []string{"README.md", "LICENSE", "magefile.go"},
 	}
 
 	tests := []struct {
@@ -53,7 +53,7 @@ func TestShouldIgnore_ExactMatch(t *testing.T) {
 	}{
 		{"README.md", true},
 		{"LICENSE", true},
-		{"Makefile", true},
+		{"magefile.go", true},
 		{"main.go", false},
 		{"test.go", false},
 	}

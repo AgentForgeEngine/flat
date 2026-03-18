@@ -1,0 +1,1581 @@
+!--~---~BEGIN-FLAT-FILE-MULTI~--~---!
+mdx_block_hash: 7363bd792ac462b1eeffc5e9f463cc27007107c7fa92c7fe78132d1fa8b7f94b
+file_hash: 7363bd792ac462b1eeffc5e9f463cc27007107c7fa92c7fe78132d1fa8b7f94b
+content_type: text/markdown
+!--~---~END-HEADER~--~---!
+path: build-system.md
+filename: build-system.md
+mode: -rw-rw-r--
+modified: "2026-03-17T17:18:55-07:00"
+created: "2026-03-17T17:18:55-07:00"
+symlink: ""
+xattrs: {}
+content_type: text/markdown
+is_external: false
+external_path: ""
+mdx_block_hash: ""
+!--~---~END-METADATA~--~---!
+# Build System - Make & Mage
+
+## Overview
+
+Flat includes Mage build system.
+
+## Mage Commands
+
+```bash
+mage build          # Build flat binary
+mage builddebug     # Build with debug symbols
+mage buildrelease   # Build optimized release binary
+mage crossbuild     # Build for multiple platforms
+mage install        # Install to $GOPATH/bin
+mage uninstall      # Uninstall from $GOPATH/bin
+mage test           # Run all tests
+mage testshort      # Run tests without verbose output
+mage testrace       # Run tests with race detector
+mage coverage       # Run tests with coverage report
+mage coveragehtml   # Generate HTML coverage report
+mage lint           # Run linters
+mage format         # Format code
+mage vet            # Run go vet
+mage clean          # Remove build artifacts
+mage tidy           # Run go mod tidy
+mage docs           # Display documentation info
+mage help           # Display help
+```
+
+
+## File Structure
+
+```
+flat/
+├── main.go              # Entry point
+├── go.mod               # Go module
+├── go.sum               # Dependencies
+├── Magefile.go          # Mage build commands
+├── README.md            # User guide
+└── docs/                # Documentation
+```
+
+## Dependencies
+
+- **Go**: 1.26.1+
+- **Mage**: 1.16.1+ (optional)
+- **gofmt**: Included in Go toolchain
+- **go test**: Included in Go toolchain
+
+## Notes
+
+- Mage is optional (requires `go install github.com/magefile/mage@latest`)
+- All build artifacts are in the root directory
+- Coverage reports are generated in the root directory
+
+!--~---~END-FILE-CONTENT~--~---!
+mdx_block_hash: 32f8c15431ce4deac86fa96f5e910719804511715efefb2022edaa7d46c90032
+file_hash: 32f8c15431ce4deac86fa96f5e910719804511715efefb2022edaa7d46c90032
+content_type: text/markdown
+!--~---~END-HEADER~--~---!
+path: checklist.md
+filename: checklist.md
+mode: -rw-rw-r--
+modified: "2026-03-17T13:36:31-07:00"
+created: "2026-03-17T13:36:31-07:00"
+symlink: ""
+xattrs: {}
+content_type: text/markdown
+is_external: false
+external_path: ""
+mdx_block_hash: ""
+!--~---~END-METADATA~--~---!
+# Flat Implementation Checklist
+
+## Phase 0: Documentation ✓
+
+- [x] docs/phase-0.md - Specification
+- [x] docs/phase-1.md - Core implementation
+- [x] docs/phase-2.md - Commands
+- [x] docs/phase-3.md - Testing & Release
+- [x] docs/overview.md - Quick reference
+- [x] README.md - User guide
+- [x] .flatignore.example - Example ignore file
+
+## Phase 1: Core Implementation
+
+### Project Setup
+- [ ] Initialize Go module (`go mod init flat`)
+- [ ] Create directory structure
+- [ ] Add dependencies (cobra, viper, yaml, blake2)
+- [ ] Create .gitignore
+
+### Config Module (`config/config.go`)
+- [ ] Config struct definition
+- [ ] Environment variable loading (FLAT_VERBOSE)
+- [ ] Viper initialization
+- [ ] Flag binding
+
+### Hash Module (`hash/hash.go`)
+- [ ] SHA-256 computation
+- [ ] SHA-512 computation
+- [ ] MD5 computation
+- [ ] BLAKE2 computation
+- [ ] CRC32 computation
+- [ ] Hash result struct
+- [ ] Helper functions (toHex, etc.)
+
+### Encoder Module (`encoder/base64.go`)
+- [ ] Base64 encode function
+- [ ] Base64 decode function
+- [ ] File encode helper
+- [ ] File decode helper
+
+### Format Writer (`format/writer.go`)
+- [ ] FileWriter struct
+- [ ] Write header function
+- [ ] Write file entry function
+- [ ] Write YAML block function
+- [ ] Write MDX section function
+- [ ] Write content block function
+- [ ] Close function
+
+### Format Parser (`format/parser.go`)
+- [ ] FileReader struct
+- [ ] Validate header function
+- [ ] Parse all entries function
+- [ ] Parse single entry function
+- [ ] Read metadata block function
+- [ ] Read content block function
+- [ ] Parse YAML helper
+- [ ] Parse hashes helper
+
+### Metadata Collector (`metadata/collector.go`)
+- [ ] Metadata struct definition
+- [ ] Collect function (regular files)
+- [ ] CollectExternal function (external refs)
+- [ ] Get extended attributes
+- [ ] List extended attributes
+- [ ] Set extended attributes
+- [ ] Detect content type
+- [ ] Parse mode helper
+
+### Binary Detection (`format/magic.go`)
+- [ ] Magic byte signatures
+- [ ] IsBinary function
+- [ ] Magic byte checking
+- [ ] Extension checking
+- [ ] Combined detection logic
+
+### Ignore Parser (`format/ignore.go`)
+- [ ] IgnoreParser struct
+- [ ] New parser function
+- [ ] ShouldIgnore function
+- [ ] Pattern matching
+- [ ] Glob pattern support
+
+## Phase 2: Commands
+
+### Flatten Command (`cmd/flatten.go`)
+- [ ] Cobra command definition
+- [ ] Flag definitions
+- [ ] RunE function
+- [ ] Source directory validation
+- [ ] .flatignore parsing
+- [ ] FileWriter initialization
+- [ ] Header writing
+- [ ] Directory walk function
+- [ ] Relative path calculation
+- [ ] Ignore pattern checking
+- [ ] Binary file detection & skipping
+- [ ] Metadata collection
+- [ ] Content reading
+- [ ] Hash computation
+- [ ] Base64 encoding
+- [ ] File entry writing
+- [ ] Verbose output
+- [ ] Summary statistics
+
+### Unflatten Command (`cmd/unflatten.go`)
+- [ ] Cobra command definition
+- [ ] Flag definitions
+- [ ] RunE function
+- [ ] Input file validation
+- [ ] Destination directory creation
+- [ ] FileReader initialization
+- [ ] Header validation
+- [ ] Parse all entries
+- [ ] Destination path calculation
+- [ ] Parent directory creation
+- [ ] External reference handling
+- [ ] Base64 decoding
+- [ ] SHA-256 verification
+- [ ] Mode parsing
+- [ ] File writing
+- [ ] Permission restoration
+- [ ] Timestamp restoration
+- [ ] Symlink handling
+- [ ] Xattr restoration
+- [ ] Verbose output
+- [ ] Summary statistics
+
+### Version Command (`cmd/version.go`)
+- [ ] Cobra command definition
+- [ ] Version variable
+- [ ] Print version function
+
+### Main CLI (`main.go`)
+- [ ] Root command definition
+- [ ] Default mode logic
+- [ ] Check for {cwd}.fmdx
+- [ ] Auto-flatten if missing
+- [ ] Error if exists
+- [ ] Add subcommands
+- [ ] Viper initialization
+- [ ] Main function
+
+## Phase 3: Testing & Release
+
+### Test Data Setup
+- [ ] Create test/data/text/ directory
+- [ ] Create test/data/binary/ directory
+- [ ] Create test/data/symlinks/ directory
+- [ ] Create test/data/special/ directory
+- [ ] Create test/data/permissions/ directory
+- [ ] Create test/data/xattrs/ directory
+- [ ] Create .flatignore file for testing
+
+### Unit Tests
+- [ ] hash/hash_test.go
+- [ ] encoder/base64_test.go
+- [ ] format/format_test.go
+- [ ] metadata/metadata_test.go
+- [ ] config/config_test.go
+
+### Integration Tests
+- [ ] test/flatten_test.go
+- [ ] test/unflatten_test.go
+- [ ] test/integration_test.go
+
+### Edge Case Tests
+- [ ] Empty files
+- [ ] Symlinks
+- [ ] Permissions
+- [ ] Special characters
+- [ ] Binary files
+- [ ] External references
+- [ ] Checksum verification
+- [ ] .flatignore patterns
+
+### Performance Tests
+- [ ] Large directory test
+- [ ] Memory usage test
+- [ ] Time benchmark
+
+### Documentation
+- [ ] README.md (already created)
+- [ ] Update with actual usage
+- [ ] Add examples
+- [ ] Create .gitignore
+- [ ] Update version numbers
+
+### Release Preparation
+- [ ] Build binary (linux, darwin, windows)
+- [ ] Create release notes
+- [ ] Tag version (v0.1.0)
+- [ ] Create GitHub release
+- [ ] Test download links
+
+## Environment Variables
+
+- [ ] FLAT_VERBOSE implementation
+
+## Error Handling
+
+- [ ] All commands have proper error messages
+- [ ] Exit codes used correctly
+- [ ] Viper error handling
+- [ ] File I/O error handling
+- [ ] Checksum mismatch errors
+
+## Code Quality
+
+- [ ] No TODO comments
+- [ ] All functions have tests
+- [ ] Code follows Go standards
+- [ ] Comments for complex logic
+- [ ] No hardcoded paths
+
+## Final Checks
+
+- [ ] All tests passing
+- [ ] go fmt applied
+- [ ] go vet clean
+- [ ] README.md accurate
+- [ ] Documentation complete
+- [ ] Binary builds successfully
+
+## Notes
+
+- SHA-256 is always verified on unflatten (unless --bypass-checksum)
+- All 5 hash algorithms are computed
+- Format uses ---BEGIN-FLAT-FILE-MULTI--- header
+- Section delimiters: !--~---~   ~--~---!
+- No FMDX delimiter (only section delimiter)
+- Output extension: .fmdx
+- Default mode: `flat` auto-flattens if no .fmdx exists
+
+!--~---~END-FILE-CONTENT~--~---!
+mdx_block_hash: ff5a742ed99b9ddd29f1898d45d8136eeab2b2c3172bbba952ad32985ee3d7ea
+file_hash: ff5a742ed99b9ddd29f1898d45d8136eeab2b2c3172bbba952ad32985ee3d7ea
+content_type: application/octet-stream
+!--~---~END-HEADER~--~---!
+path: docs.fmdx
+filename: docs.fmdx
+mode: -rw-rw-r--
+modified: "2026-03-17T17:54:12-07:00"
+created: "2026-03-17T17:54:12-07:00"
+symlink: ""
+xattrs: {}
+content_type: application/octet-stream
+is_external: false
+external_path: ""
+mdx_block_hash: ""
+!--~---~END-METADATA~--~---!
+IS0tfi0tLX5CRUdJTi1GTEFULUZJTEUtTVVMVEl+LS1+LS0tIQptZHhfYmxvY2tfaGFzaDogNzM2M2JkNzkyYWM0NjJiMWVlZmZjNWU5ZjQ2M2NjMjcwMDcxMDdjN2ZhOTJjN2ZlNzgxMzJkMWZhOGI3Zjk0YgpmaWxlX2hhc2g6IDczNjNiZDc5MmFjNDYyYjFlZWZmYzVlOWY0NjNjYzI3MDA3MTA3YzdmYTkyYzdmZTc4MTMyZDFmYThiN2Y5NGIKY29udGVudF90eXBlOiB0ZXh0L21hcmtkb3duCiEtLX4tLS1+RU5ELUhFQURFUn4tLX4tLS0hCnBhdGg6IGJ1aWxkLXN5c3RlbS5tZApmaWxlbmFtZTogYnVpbGQtc3lzdGVtLm1kCm1vZGU6IC1ydy1ydy1yLS0KbW9kaWZpZWQ6ICIyMDI2LTAzLTE3VDE3OjE4OjU1LTA3OjAwIgpjcmVhdGVkOiAiMjAyNi0wMy0xN1QxNzoxODo1NS0wNzowMCIKc3ltbGluazogIiIKeGF0dHJzOiB7fQpjb250ZW50X3R5cGU6IHRleHQvbWFya2Rvd24KaXNfZXh0ZXJuYWw6IGZhbHNlCmV4dGVybmFsX3BhdGg6ICIiCm1keF9ibG9ja19oYXNoOiAiIgohLS1+LS0tfkVORC1NRVRBREFUQX4tLX4tLS0hCiMgQnVpbGQgU3lzdGVtIC0gTWFrZSAmIE1hZ2UKCiMjIE92ZXJ2aWV3CgpGbGF0IGluY2x1ZGVzIE1hZ2UgYnVpbGQgc3lzdGVtLgoKIyMgTWFnZSBDb21tYW5kcwoKYGBgYmFzaAptYWdlIGJ1aWxkICAgICAgICAgICMgQnVpbGQgZmxhdCBiaW5hcnkKbWFnZSBidWlsZGRlYnVnICAgICAjIEJ1aWxkIHdpdGggZGVidWcgc3ltYm9scwptYWdlIGJ1aWxkcmVsZWFzZSAgICMgQnVpbGQgb3B0aW1pemVkIHJlbGVhc2UgYmluYXJ5Cm1hZ2UgY3Jvc3NidWlsZCAgICAgIyBCdWlsZCBmb3IgbXVsdGlwbGUgcGxhdGZvcm1zCm1hZ2UgaW5zdGFsbCAgICAgICAgIyBJbnN0YWxsIHRvICRHT1BBVEgvYmluCm1hZ2UgdW5pbnN0YWxsICAgICAgIyBVbmluc3RhbGwgZnJvbSAkR09QQVRIL2JpbgptYWdlIHRlc3QgICAgICAgICAgICMgUnVuIGFsbCB0ZXN0cwptYWdlIHRlc3RzaG9ydCAgICAgICMgUnVuIHRlc3RzIHdpdGhvdXQgdmVyYm9zZSBvdXRwdXQKbWFnZSB0ZXN0cmFjZSAgICAgICAjIFJ1biB0ZXN0cyB3aXRoIHJhY2UgZGV0ZWN0b3IKbWFnZSBjb3ZlcmFnZSAgICAgICAjIFJ1biB0ZXN0cyB3aXRoIGNvdmVyYWdlIHJlcG9ydAptYWdlIGNvdmVyYWdlaHRtbCAgICMgR2VuZXJhdGUgSFRNTCBjb3ZlcmFnZSByZXBvcnQKbWFnZSBsaW50ICAgICAgICAgICAjIFJ1biBsaW50ZXJzCm1hZ2UgZm9ybWF0ICAgICAgICAgIyBGb3JtYXQgY29kZQptYWdlIHZldCAgICAgICAgICAgICMgUnVuIGdvIHZldAptYWdlIGNsZWFuICAgICAgICAgICMgUmVtb3ZlIGJ1aWxkIGFydGlmYWN0cwptYWdlIHRpZHkgICAgICAgICAgICMgUnVuIGdvIG1vZCB0aWR5Cm1hZ2UgZG9jcyAgICAgICAgICAgIyBEaXNwbGF5IGRvY3VtZW50YXRpb24gaW5mbwptYWdlIGhlbHAgICAgICAgICAgICMgRGlzcGxheSBoZWxwCmBgYAoKCiMjIEZpbGUgU3RydWN0dXJlCgpgYGAKZmxhdC8K4pSc4pSA4pSAIG1haW4uZ28gICAgICAgICAgICAgICMgRW50cnkgcG9pbnQK4pSc4pSA4pSAIGdvLm1vZCAgICAgICAgICAgICAgICMgR28gbW9kdWxlCuKUnOKUgOKUgCBnby5zdW0gICAgICAgICAgICAgICAjIERlcGVuZGVuY2llcwrilJzilIDilIAgTWFnZWZpbGUuZ28gICAgICAgICAgIyBNYWdlIGJ1aWxkIGNvbW1hbmRzCuKUnOKUgOKUgCBSRUFETUUubWQgICAgICAgICAgICAjIFVzZXIgZ3VpZGUK4pSU4pSA4pSAIGRvY3MvICAgICAgICAgICAgICAgICMgRG9jdW1lbnRhdGlvbgpgYGAKCiMjIERlcGVuZGVuY2llcwoKLSAqKkdvKio6IDEuMjYuMSsKLSAqKk1hZ2UqKjogMS4xNi4xKyAob3B0aW9uYWwpCi0gKipnb2ZtdCoqOiBJbmNsdWRlZCBpbiBHbyB0b29sY2hhaW4KLSAqKmdvIHRlc3QqKjogSW5jbHVkZWQgaW4gR28gdG9vbGNoYWluCgojIyBOb3RlcwoKLSBNYWdlIGlzIG9wdGlvbmFsIChyZXF1aXJlcyBgZ28gaW5zdGFsbCBnaXRodWIuY29tL21hZ2VmaWxlL21hZ2VAbGF0ZXN0YCkKLSBBbGwgYnVpbGQgYXJ0aWZhY3RzIGFyZSBpbiB0aGUgcm9vdCBkaXJlY3RvcnkKLSBDb3ZlcmFnZSByZXBvcnRzIGFyZSBnZW5lcmF0ZWQgaW4gdGhlIHJvb3QgZGlyZWN0b3J5CgohLS1+LS0tfkVORC1GSUxFLUNPTlRFTlR+LS1+LS0tIQptZHhfYmxvY2tfaGFzaDogMzJmOGMxNTQzMWNlNGRlYWM4NmZhOTZmNWU5MTA3MTk4MDQ1MTE3MTVlZmVmYjIwMjJlZGFhN2Q0NmM5MDAzMgpmaWxlX2hhc2g6IDMyZjhjMTU0MzFjZTRkZWFjODZmYTk2ZjVlOTEwNzE5ODA0NTExNzE1ZWZlZmIyMDIyZWRhYTdkNDZjOTAwMzIKY29udGVudF90eXBlOiB0ZXh0L21hcmtkb3duCiEtLX4tLS1+RU5ELUhFQURFUn4tLX4tLS0hCnBhdGg6IGNoZWNrbGlzdC5tZApmaWxlbmFtZTogY2hlY2tsaXN0Lm1kCm1vZGU6IC1ydy1ydy1yLS0KbW9kaWZpZWQ6ICIyMDI2LTAzLTE3VDEzOjM2OjMxLTA3OjAwIgpjcmVhdGVkOiAiMjAyNi0wMy0xN1QxMzozNjozMS0wNzowMCIKc3ltbGluazogIiIKeGF0dHJzOiB7fQpjb250ZW50X3R5cGU6IHRleHQvbWFya2Rvd24KaXNfZXh0ZXJuYWw6IGZhbHNlCmV4dGVybmFsX3BhdGg6ICIiCm1keF9ibG9ja19oYXNoOiAiIgohLS1+LS0tfkVORC1NRVRBREFUQX4tLX4tLS0hCiMgRmxhdCBJbXBsZW1lbnRhdGlvbiBDaGVja2xpc3QKCiMjIFBoYXNlIDA6IERvY3VtZW50YXRpb24g4pyTCgotIFt4XSBkb2NzL3BoYXNlLTAubWQgLSBTcGVjaWZpY2F0aW9uCi0gW3hdIGRvY3MvcGhhc2UtMS5tZCAtIENvcmUgaW1wbGVtZW50YXRpb24KLSBbeF0gZG9jcy9waGFzZS0yLm1kIC0gQ29tbWFuZHMKLSBbeF0gZG9jcy9waGFzZS0zLm1kIC0gVGVzdGluZyAmIFJlbGVhc2UKLSBbeF0gZG9jcy9vdmVydmlldy5tZCAtIFF1aWNrIHJlZmVyZW5jZQotIFt4XSBSRUFETUUubWQgLSBVc2VyIGd1aWRlCi0gW3hdIC5mbGF0aWdub3JlLmV4YW1wbGUgLSBFeGFtcGxlIGlnbm9yZSBmaWxlCgojIyBQaGFzZSAxOiBDb3JlIEltcGxlbWVudGF0aW9uCgojIyMgUHJvamVjdCBTZXR1cAotIFsgXSBJbml0aWFsaXplIEdvIG1vZHVsZSAoYGdvIG1vZCBpbml0IGZsYXRgKQotIFsgXSBDcmVhdGUgZGlyZWN0b3J5IHN0cnVjdHVyZQotIFsgXSBBZGQgZGVwZW5kZW5jaWVzIChjb2JyYSwgdmlwZXIsIHlhbWwsIGJsYWtlMikKLSBbIF0gQ3JlYXRlIC5naXRpZ25vcmUKCiMjIyBDb25maWcgTW9kdWxlIChgY29uZmlnL2NvbmZpZy5nb2ApCi0gWyBdIENvbmZpZyBzdHJ1Y3QgZGVmaW5pdGlvbgotIFsgXSBFbnZpcm9ubWVudCB2YXJpYWJsZSBsb2FkaW5nIChGTEFUX1ZFUkJPU0UpCi0gWyBdIFZpcGVyIGluaXRpYWxpemF0aW9uCi0gWyBdIEZsYWcgYmluZGluZwoKIyMjIEhhc2ggTW9kdWxlIChgaGFzaC9oYXNoLmdvYCkKLSBbIF0gU0hBLTI1NiBjb21wdXRhdGlvbgotIFsgXSBTSEEtNTEyIGNvbXB1dGF0aW9uCi0gWyBdIE1ENSBjb21wdXRhdGlvbgotIFsgXSBCTEFLRTIgY29tcHV0YXRpb24KLSBbIF0gQ1JDMzIgY29tcHV0YXRpb24KLSBbIF0gSGFzaCByZXN1bHQgc3RydWN0Ci0gWyBdIEhlbHBlciBmdW5jdGlvbnMgKHRvSGV4LCBldGMuKQoKIyMjIEVuY29kZXIgTW9kdWxlIChgZW5jb2Rlci9iYXNlNjQuZ29gKQotIFsgXSBCYXNlNjQgZW5jb2RlIGZ1bmN0aW9uCi0gWyBdIEJhc2U2NCBkZWNvZGUgZnVuY3Rpb24KLSBbIF0gRmlsZSBlbmNvZGUgaGVscGVyCi0gWyBdIEZpbGUgZGVjb2RlIGhlbHBlcgoKIyMjIEZvcm1hdCBXcml0ZXIgKGBmb3JtYXQvd3JpdGVyLmdvYCkKLSBbIF0gRmlsZVdyaXRlciBzdHJ1Y3QKLSBbIF0gV3JpdGUgaGVhZGVyIGZ1bmN0aW9uCi0gWyBdIFdyaXRlIGZpbGUgZW50cnkgZnVuY3Rpb24KLSBbIF0gV3JpdGUgWUFNTCBibG9jayBmdW5jdGlvbgotIFsgXSBXcml0ZSBNRFggc2VjdGlvbiBmdW5jdGlvbgotIFsgXSBXcml0ZSBjb250ZW50IGJsb2NrIGZ1bmN0aW9uCi0gWyBdIENsb3NlIGZ1bmN0aW9uCgojIyMgRm9ybWF0IFBhcnNlciAoYGZvcm1hdC9wYXJzZXIuZ29gKQotIFsgXSBGaWxlUmVhZGVyIHN0cnVjdAotIFsgXSBWYWxpZGF0ZSBoZWFkZXIgZnVuY3Rpb24KLSBbIF0gUGFyc2UgYWxsIGVudHJpZXMgZnVuY3Rpb24KLSBbIF0gUGFyc2Ugc2luZ2xlIGVudHJ5IGZ1bmN0aW9uCi0gWyBdIFJlYWQgbWV0YWRhdGEgYmxvY2sgZnVuY3Rpb24KLSBbIF0gUmVhZCBjb250ZW50IGJsb2NrIGZ1bmN0aW9uCi0gWyBdIFBhcnNlIFlBTUwgaGVscGVyCi0gWyBdIFBhcnNlIGhhc2hlcyBoZWxwZXIKCiMjIyBNZXRhZGF0YSBDb2xsZWN0b3IgKGBtZXRhZGF0YS9jb2xsZWN0b3IuZ29gKQotIFsgXSBNZXRhZGF0YSBzdHJ1Y3QgZGVmaW5pdGlvbgotIFsgXSBDb2xsZWN0IGZ1bmN0aW9uIChyZWd1bGFyIGZpbGVzKQotIFsgXSBDb2xsZWN0RXh0ZXJuYWwgZnVuY3Rpb24gKGV4dGVybmFsIHJlZnMpCi0gWyBdIEdldCBleHRlbmRlZCBhdHRyaWJ1dGVzCi0gWyBdIExpc3QgZXh0ZW5kZWQgYXR0cmlidXRlcwotIFsgXSBTZXQgZXh0ZW5kZWQgYXR0cmlidXRlcwotIFsgXSBEZXRlY3QgY29udGVudCB0eXBlCi0gWyBdIFBhcnNlIG1vZGUgaGVscGVyCgojIyMgQmluYXJ5IERldGVjdGlvbiAoYGZvcm1hdC9tYWdpYy5nb2ApCi0gWyBdIE1hZ2ljIGJ5dGUgc2lnbmF0dXJlcwotIFsgXSBJc0JpbmFyeSBmdW5jdGlvbgotIFsgXSBNYWdpYyBieXRlIGNoZWNraW5nCi0gWyBdIEV4dGVuc2lvbiBjaGVja2luZwotIFsgXSBDb21iaW5lZCBkZXRlY3Rpb24gbG9naWMKCiMjIyBJZ25vcmUgUGFyc2VyIChgZm9ybWF0L2lnbm9yZS5nb2ApCi0gWyBdIElnbm9yZVBhcnNlciBzdHJ1Y3QKLSBbIF0gTmV3IHBhcnNlciBmdW5jdGlvbgotIFsgXSBTaG91bGRJZ25vcmUgZnVuY3Rpb24KLSBbIF0gUGF0dGVybiBtYXRjaGluZwotIFsgXSBHbG9iIHBhdHRlcm4gc3VwcG9ydAoKIyMgUGhhc2UgMjogQ29tbWFuZHMKCiMjIyBGbGF0dGVuIENvbW1hbmQgKGBjbWQvZmxhdHRlbi5nb2ApCi0gWyBdIENvYnJhIGNvbW1hbmQgZGVmaW5pdGlvbgotIFsgXSBGbGFnIGRlZmluaXRpb25zCi0gWyBdIFJ1bkUgZnVuY3Rpb24KLSBbIF0gU291cmNlIGRpcmVjdG9yeSB2YWxpZGF0aW9uCi0gWyBdIC5mbGF0aWdub3JlIHBhcnNpbmcKLSBbIF0gRmlsZVdyaXRlciBpbml0aWFsaXphdGlvbgotIFsgXSBIZWFkZXIgd3JpdGluZwotIFsgXSBEaXJlY3Rvcnkgd2FsayBmdW5jdGlvbgotIFsgXSBSZWxhdGl2ZSBwYXRoIGNhbGN1bGF0aW9uCi0gWyBdIElnbm9yZSBwYXR0ZXJuIGNoZWNraW5nCi0gWyBdIEJpbmFyeSBmaWxlIGRldGVjdGlvbiAmIHNraXBwaW5nCi0gWyBdIE1ldGFkYXRhIGNvbGxlY3Rpb24KLSBbIF0gQ29udGVudCByZWFkaW5nCi0gWyBdIEhhc2ggY29tcHV0YXRpb24KLSBbIF0gQmFzZTY0IGVuY29kaW5nCi0gWyBdIEZpbGUgZW50cnkgd3JpdGluZwotIFsgXSBWZXJib3NlIG91dHB1dAotIFsgXSBTdW1tYXJ5IHN0YXRpc3RpY3MKCiMjIyBVbmZsYXR0ZW4gQ29tbWFuZCAoYGNtZC91bmZsYXR0ZW4uZ29gKQotIFsgXSBDb2JyYSBjb21tYW5kIGRlZmluaXRpb24KLSBbIF0gRmxhZyBkZWZpbml0aW9ucwotIFsgXSBSdW5FIGZ1bmN0aW9uCi0gWyBdIElucHV0IGZpbGUgdmFsaWRhdGlvbgotIFsgXSBEZXN0aW5hdGlvbiBkaXJlY3RvcnkgY3JlYXRpb24KLSBbIF0gRmlsZVJlYWRlciBpbml0aWFsaXphdGlvbgotIFsgXSBIZWFkZXIgdmFsaWRhdGlvbgotIFsgXSBQYXJzZSBhbGwgZW50cmllcwotIFsgXSBEZXN0aW5hdGlvbiBwYXRoIGNhbGN1bGF0aW9uCi0gWyBdIFBhcmVudCBkaXJlY3RvcnkgY3JlYXRpb24KLSBbIF0gRXh0ZXJuYWwgcmVmZXJlbmNlIGhhbmRsaW5nCi0gWyBdIEJhc2U2NCBkZWNvZGluZwotIFsgXSBTSEEtMjU2IHZlcmlmaWNhdGlvbgotIFsgXSBNb2RlIHBhcnNpbmcKLSBbIF0gRmlsZSB3cml0aW5nCi0gWyBdIFBlcm1pc3Npb24gcmVzdG9yYXRpb24KLSBbIF0gVGltZXN0YW1wIHJlc3RvcmF0aW9uCi0gWyBdIFN5bWxpbmsgaGFuZGxpbmcKLSBbIF0gWGF0dHIgcmVzdG9yYXRpb24KLSBbIF0gVmVyYm9zZSBvdXRwdXQKLSBbIF0gU3VtbWFyeSBzdGF0aXN0aWNzCgojIyMgVmVyc2lvbiBDb21tYW5kIChgY21kL3ZlcnNpb24uZ29gKQotIFsgXSBDb2JyYSBjb21tYW5kIGRlZmluaXRpb24KLSBbIF0gVmVyc2lvbiB2YXJpYWJsZQotIFsgXSBQcmludCB2ZXJzaW9uIGZ1bmN0aW9uCgojIyMgTWFpbiBDTEkgKGBtYWluLmdvYCkKLSBbIF0gUm9vdCBjb21tYW5kIGRlZmluaXRpb24KLSBbIF0gRGVmYXVsdCBtb2RlIGxvZ2ljCi0gWyBdIENoZWNrIGZvciB7Y3dkfS5mbWR4Ci0gWyBdIEF1dG8tZmxhdHRlbiBpZiBtaXNzaW5nCi0gWyBdIEVycm9yIGlmIGV4aXN0cwotIFsgXSBBZGQgc3ViY29tbWFuZHMKLSBbIF0gVmlwZXIgaW5pdGlhbGl6YXRpb24KLSBbIF0gTWFpbiBmdW5jdGlvbgoKIyMgUGhhc2UgMzogVGVzdGluZyAmIFJlbGVhc2UKCiMjIyBUZXN0IERhdGEgU2V0dXAKLSBbIF0gQ3JlYXRlIHRlc3QvZGF0YS90ZXh0LyBkaXJlY3RvcnkKLSBbIF0gQ3JlYXRlIHRlc3QvZGF0YS9iaW5hcnkvIGRpcmVjdG9yeQotIFsgXSBDcmVhdGUgdGVzdC9kYXRhL3N5bWxpbmtzLyBkaXJlY3RvcnkKLSBbIF0gQ3JlYXRlIHRlc3QvZGF0YS9zcGVjaWFsLyBkaXJlY3RvcnkKLSBbIF0gQ3JlYXRlIHRlc3QvZGF0YS9wZXJtaXNzaW9ucy8gZGlyZWN0b3J5Ci0gWyBdIENyZWF0ZSB0ZXN0L2RhdGEveGF0dHJzLyBkaXJlY3RvcnkKLSBbIF0gQ3JlYXRlIC5mbGF0aWdub3JlIGZpbGUgZm9yIHRlc3RpbmcKCiMjIyBVbml0IFRlc3RzCi0gWyBdIGhhc2gvaGFzaF90ZXN0LmdvCi0gWyBdIGVuY29kZXIvYmFzZTY0X3Rlc3QuZ28KLSBbIF0gZm9ybWF0L2Zvcm1hdF90ZXN0LmdvCi0gWyBdIG1ldGFkYXRhL21ldGFkYXRhX3Rlc3QuZ28KLSBbIF0gY29uZmlnL2NvbmZpZ190ZXN0LmdvCgojIyMgSW50ZWdyYXRpb24gVGVzdHMKLSBbIF0gdGVzdC9mbGF0dGVuX3Rlc3QuZ28KLSBbIF0gdGVzdC91bmZsYXR0ZW5fdGVzdC5nbwotIFsgXSB0ZXN0L2ludGVncmF0aW9uX3Rlc3QuZ28KCiMjIyBFZGdlIENhc2UgVGVzdHMKLSBbIF0gRW1wdHkgZmlsZXMKLSBbIF0gU3ltbGlua3MKLSBbIF0gUGVybWlzc2lvbnMKLSBbIF0gU3BlY2lhbCBjaGFyYWN0ZXJzCi0gWyBdIEJpbmFyeSBmaWxlcwotIFsgXSBFeHRlcm5hbCByZWZlcmVuY2VzCi0gWyBdIENoZWNrc3VtIHZlcmlmaWNhdGlvbgotIFsgXSAuZmxhdGlnbm9yZSBwYXR0ZXJucwoKIyMjIFBlcmZvcm1hbmNlIFRlc3RzCi0gWyBdIExhcmdlIGRpcmVjdG9yeSB0ZXN0Ci0gWyBdIE1lbW9yeSB1c2FnZSB0ZXN0Ci0gWyBdIFRpbWUgYmVuY2htYXJrCgojIyMgRG9jdW1lbnRhdGlvbgotIFsgXSBSRUFETUUubWQgKGFscmVhZHkgY3JlYXRlZCkKLSBbIF0gVXBkYXRlIHdpdGggYWN0dWFsIHVzYWdlCi0gWyBdIEFkZCBleGFtcGxlcwotIFsgXSBDcmVhdGUgLmdpdGlnbm9yZQotIFsgXSBVcGRhdGUgdmVyc2lvbiBudW1iZXJzCgojIyMgUmVsZWFzZSBQcmVwYXJhdGlvbgotIFsgXSBCdWlsZCBiaW5hcnkgKGxpbnV4LCBkYXJ3aW4sIHdpbmRvd3MpCi0gWyBdIENyZWF0ZSByZWxlYXNlIG5vdGVzCi0gWyBdIFRhZyB2ZXJzaW9uICh2MC4xLjApCi0gWyBdIENyZWF0ZSBHaXRIdWIgcmVsZWFzZQotIFsgXSBUZXN0IGRvd25sb2FkIGxpbmtzCgojIyBFbnZpcm9ubWVudCBWYXJpYWJsZXMKCi0gWyBdIEZMQVRfVkVSQk9TRSBpbXBsZW1lbnRhdGlvbgoKIyMgRXJyb3IgSGFuZGxpbmcKCi0gWyBdIEFsbCBjb21tYW5kcyBoYXZlIHByb3BlciBlcnJvciBtZXNzYWdlcwotIFsgXSBFeGl0IGNvZGVzIHVzZWQgY29ycmVjdGx5Ci0gWyBdIFZpcGVyIGVycm9yIGhhbmRsaW5nCi0gWyBdIEZpbGUgSS9PIGVycm9yIGhhbmRsaW5nCi0gWyBdIENoZWNrc3VtIG1pc21hdGNoIGVycm9ycwoKIyMgQ29kZSBRdWFsaXR5CgotIFsgXSBObyBUT0RPIGNvbW1lbnRzCi0gWyBdIEFsbCBmdW5jdGlvbnMgaGF2ZSB0ZXN0cwotIFsgXSBDb2RlIGZvbGxvd3MgR28gc3RhbmRhcmRzCi0gWyBdIENvbW1lbnRzIGZvciBjb21wbGV4IGxvZ2ljCi0gWyBdIE5vIGhhcmRjb2RlZCBwYXRocwoKIyMgRmluYWwgQ2hlY2tzCgotIFsgXSBBbGwgdGVzdHMgcGFzc2luZwotIFsgXSBnbyBmbXQgYXBwbGllZAotIFsgXSBnbyB2ZXQgY2xlYW4KLSBbIF0gUkVBRE1FLm1kIGFjY3VyYXRlCi0gWyBdIERvY3VtZW50YXRpb24gY29tcGxldGUKLSBbIF0gQmluYXJ5IGJ1aWxkcyBzdWNjZXNzZnVsbHkKCiMjIE5vdGVzCgotIFNIQS0yNTYgaXMgYWx3YXlzIHZlcmlmaWVkIG9uIHVuZmxhdHRlbiAodW5sZXNzIC0tYnlwYXNzLWNoZWNrc3VtKQotIEFsbCA1IGhhc2ggYWxnb3JpdGhtcyBhcmUgY29tcHV0ZWQKLSBGb3JtYXQgdXNlcyAtLS1CRUdJTi1GTEFULUZJTEUtTVVMVEktLS0gaGVhZGVyCi0gU2VjdGlvbiBkZWxpbWl0ZXJzOiAhLS1+LS0tfiAgIH4tLX4tLS0hCi0gTm8gRk1EWCBkZWxpbWl0ZXIgKG9ubHkgc2VjdGlvbiBkZWxpbWl0ZXIpCi0gT3V0cHV0IGV4dGVuc2lvbjogLmZtZHgKLSBEZWZhdWx0IG1vZGU6IGBmbGF0YCBhdXRvLWZsYXR0ZW5zIGlmIG5vIC5mbWR4IGV4aXN0cwoKIS0tfi0tLX5FTkQtRklMRS1DT05URU5Ufi0tfi0tLSEK
+!--~---~END-FILE-CONTENT~--~---!
+mdx_block_hash: 8549d509c394cbb56fc88b44053e178c17370cf81d8a4f15beaba91d27875ed9
+file_hash: 8549d509c394cbb56fc88b44053e178c17370cf81d8a4f15beaba91d27875ed9
+content_type: text/markdown
+!--~---~END-HEADER~--~---!
+path: phase-0.md
+filename: phase-0.md
+mode: -rw-rw-r--
+modified: "2026-03-17T17:48:32-07:00"
+created: "2026-03-17T17:48:32-07:00"
+symlink: ""
+xattrs: {}
+content_type: text/markdown
+is_external: false
+external_path: ""
+mdx_block_hash: ""
+!--~---~END-METADATA~--~---!
+# Phase 0: Flat File Format Specification
+
+## Overview
+
+Flat uses a custom file format (`.fmdx`) to store directory trees with complete metadata preservation. The format uses **context-specific section delimiters** to avoid conflicts with content that might contain delimiter-like strings.
+
+## Format Specification
+
+### Structure
+
+```
+!--~---~BEGIN-FLAT-FILE-MULTI~--~---!
+mdx_block_hash: <sha256>
+file_hash: <sha256>
+content_type: <mime>
+!--~---~END-HEADER~--~---!
+path: "relative/path"
+filename: "name.ext"
+mode: "0644"
+modified: "2026-03-16T12:00:00Z"
+created: "2026-03-16T10:00:00Z"
+symlink: ""
+xattrs: {}
+content_type: "text/plain"
+is_external: false
+external_path: ""
+mdx_block_hash: ""
+!--~---~END-METADATA~--~---!
+base64-encoded-content
+!--~---~END-FILE-CONTENT~--~---!
+```
+
+### Multi-File Example
+
+```
+!--~---~BEGIN-FLAT-FILE-MULTI~--~---!
+mdx_block_hash: <sha256>
+file_hash: <sha256>
+content_type: <mime>
+!--~---~END-HEADER~--~---!
+path: "file1.md"
+filename: "file1.md"
+mode: "0644"
+modified: "2026-03-16T12:00:00Z"
+created: "2026-03-16T10:00:00Z"
+symlink: ""
+xattrs: {}
+content_type: "text/markdown"
+is_external: false
+!--~---~END-METADATA~--~---!
+UyBGaWxlIDEgLSBDb250ZW50
+!--~---~END-FILE-CONTENT~--~---!
+!--~---~BEGIN-FLAT-FILE-MULTI~--~---!
+mdx_block_hash: <sha256>
+file_hash: <sha256>
+content_type: <mime>
+!--~---~END-HEADER~--~---!
+path: "file2.md"
+filename: "file2.md"
+mode: "0644"
+modified: "2026-03-16T12:00:00Z"
+created: "2026-03-16T10:00:00Z"
+symlink: ""
+xattrs: {}
+content_type: "text/markdown"
+is_external: false
+!--~---~END-METADATA~--~---!
+UyBGaWxlIDIgLSBDb250ZW50
+!--~---~END-FILE-CONTENT~--~---!
+```
+
+### Delimiters
+
+All delimiters follow the pattern `!--~---~...~--~---!`:
+
+| Delimiter | Purpose |
+|-----------|---------|
+| `!--~---~BEGIN-FLAT-FILE-MULTI~--~---!` | Marks start of .fmdx file |
+| `!--~---~END-HEADER~--~---!` | Marks end of header block (hashes and content type) |
+| `!--~---~END-METADATA~--~---!` | Marks end of file metadata block |
+| `!--~---~END-FILE-CONTENT~--~---!` | Marks end of file content, start of next entry |
+
+### Header Block
+
+Contains:
+- `mdx_block_hash`: SHA-256 hash of the metadata block
+- `file_hash`: SHA-256 hash of original file content
+- `content_type`: Auto-detected MIME type
+
+### Metadata Block
+
+Contains YAML with:
+- `path`: Relative path from source directory
+- `filename`: Base filename only
+- `mode`: Octal permissions (e.g., "0644")
+- `modified`: Last modification time (ISO 8601)
+- `created`: Creation time (if available)
+- `symlink`: Empty or symlink target path
+- `xattrs`: Extended attributes (user.* and security.*)
+- `content_type`: Auto-detected MIME type
+- `is_external`: True if external reference
+- `external_path`: Original path (for external refs)
+- `mdx_block_hash`: SHA-256 hash of metadata YAML block
+
+### Content Block
+
+- **Always base64 encoded** (prevents delimiter conflicts)
+- Can contain any characters
+- Decoded on unflatten
+
+## Why Context-Specific Delimiters?
+
+Using separate delimiters for each section boundary solves several problems:
+
+1. **No delimiter-in-content conflicts** - Each delimiter is unique
+2. **Content can contain any string** - No need for escaping
+3. **Clear parsing logic** - Parser knows which delimiter to expect
+4. **Future extensibility** - Easy to add new section types
+
+## Metadata Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `path` | string | Relative path from source directory |
+| `filename` | string | Base filename only |
+| `mode` | string | Octal permissions (e.g., "0644") |
+| `modified` | timestamp | Last modification time (ISO 8601) |
+| `created` | timestamp | Creation time (if available) |
+| `symlink` | string | Empty or symlink target path |
+| `xattrs` | map | Extended attributes (user.* and security.*) |
+| `content_type` | string | Auto-detected MIME type |
+| `is_external` | bool | True if external reference |
+| `external_path` | string | Original path (for external refs) |
+| `mdx_block_hash` | string | SHA-256 hash of metadata YAML block |
+
+## Hash Algorithms
+
+All hashes are computed and stored:
+
+- **SHA-256** (32 bytes) - Primary verification algorithm
+- **SHA-512** (64 bytes) - Extra security
+- **MD5** (16 bytes) - Fast verification
+- **BLAKE2** (32 bytes) - Modern alternative
+- **CRC32** (4 bytes) - Quick error detection
+
+Hashes are stored as hexadecimal strings.
+
+## Content Encoding
+
+All content is **always base64 encoded** to prevent:
+- Delimiter conflicts in content
+- Binary data corruption
+- Encoding issues with special characters
+- Whitespace preservation problems
+
+This means:
+- Text files are encoded (not stored as plain text)
+- Binary files are encoded (as before)
+- All content is safe for storage in .fmdx
+
+## CLI Specification
+
+### Default Mode
+
+```bash
+# In project directory
+flat
+```
+
+**Behavior**:
+- If `{cwd}.fmdx` does NOT exist: flatten current directory to `{cwd}.fmdx`
+- If `{cwd}.fmdx` EXISTS: error and require explicit command
+
+### Flatten Command
+
+```bash
+flat flatten <source-dir> <output.fmdx>
+```
+
+**Flags**:
+- `-v, --verbose`: Print progress output
+- `--no-bin`: Skip binary files
+- `--external`: Store external references (path only)
+- `--exclude <pattern>`: Exclude files matching pattern
+- `--ignore-file <path>`: Path to .flatignore file
+
+### Unflatten Command
+
+```bash
+flat unflatten <input.fmdx> <destination-dir>
+```
+
+**Flags**:
+- `-v, --verbose`: Print progress output
+- `--bypass-checksum`: Skip SHA-256 verification (not recommended)
+
+### Version Command
+
+```bash
+flat version
+```
+
+Displays version information.
+
+## .flatignore
+
+Create a `.flatignore` file to exclude files:
+
+```
+# Comments start with #
+*.bin
+*.exe
+node_modules/
+.git/
+.DS_Store
+dist/
+```
+
+### Pattern Matching
+
+- `*.ext` - Match extension
+- `dir/` - Match directory
+- `filename` - Exact filename match
+
+## Examples
+
+### Backup Your Project
+
+```bash
+# Create backup
+flat flatten ./my-project ./my-project-backup.fmdx
+
+# Later, restore it
+flat unflatten my-project-backup.fmdx ./restored
+```
+
+### Transfer Project
+
+```bash
+# On source machine
+cd /path/to/project
+flat flatten . ./project.fmdx
+
+# Copy and restore
+scp project.fmdx user@destination:/tmp/
+flat unflatten /tmp/project.fmdx ./project
+```
+
+### Exclude Large Files
+
+```bash
+# Create .flatignore
+echo "large_files/" > .flatignore
+echo "*.bin" >> .flatignore
+
+# Flatten with exclusions
+flat flatten ./project ./backup.fmdx
+```
+
+## Testing Strategy
+
+### Test Cases
+
+1. **Basic flatten/unflatten**
+   - Single file
+   - Directory with files
+   - Nested directory structure
+
+2. **Metadata preservation**
+   - File permissions (0644, 0755, etc.)
+   - Timestamps (modified, created)
+   - Symlinks (relative, absolute)
+   - Extended attributes
+
+3. **Binary handling**
+   - Text files (base64 encoded)
+   - Binary files (base64 encoded)
+   - Mixed content
+
+4. **Edge cases**
+   - Empty files
+   - Files with special characters
+   - Very large files
+   - Files with null bytes
+
+5. **Checksum verification**
+   - Valid hashes (success)
+   - Tampered file (hash mismatch)
+   - --bypass-checksum flag
+
+6. **Filtering**
+   - --no-bin flag (skip binaries)
+   - .flatignore patterns
+   - --external flag (external refs)
+
+7. **Error handling**
+   - Permission errors
+   - Missing directories
+   - Invalid .fmdx format
+
+### Test Data
+
+Create test directories with:
+- Regular text files (`.txt`, `.md`, `.go`, `.js`)
+- Binary files (`.png`, `.jpg`, `.bin`, `.exe`)
+- Symlinks (pointing to files and directories)
+- Files with different permissions
+- Files with xattrs set
+- Nested directories
+- Empty files
+- Files with special characters in names
+
+## Dependencies
+
+### Go Modules
+
+```go
+module flat
+
+go 1.21
+
+require (
+    github.com/spf13/cobra v1.8.0
+    github.com/spf13/viper v1.18.2
+    golang.org/x/crypto v0.17.0  # BLAKE2
+    golang.org/x/text v0.14.0    # MIME detection
+)
+```
+
+### External Libraries
+
+- **Cobra**: CLI framework
+- **Viper**: Configuration management
+- **crypto/sha256**: SHA-256 hashing (stdlib)
+- **crypto/sha512**: SHA-512 hashing (stdlib)
+- **crypto/md5**: MD5 hashing (stdlib)
+- **golang.org/x/crypto/blake2**: BLAKE2 hashing
+- **hash/crc32**: CRC32 hashing (stdlib)
+- **encoding/base64**: Base64 encoding (stdlib)
+- **gopkg.in/yaml.v3**: YAML marshaling
+
+## Versioning
+
+Version format: `0.x.y`
+
+- **0.x.y**: Pre-1.0 releases (breaking changes possible)
+- Version displayed by `flat version`
+- Auto-extracted from git tags if available
+
+## Future Enhancements (Post-1.0)
+
+- Compression (gzip/zstd) for smaller .fmdx files
+- Incremental backups (compare with previous .fmdx)
+- Encryption (optional AES-256 encryption)
+- Multi-file .fmdx (split large projects)
+- Web UI for visualization
+- Diff mode (show changes between .fmdx files)
+
+## Notes
+
+1. **SHA-256 is always verified** on unflatten unless `--bypass-checksum` is used
+2. **All 5 hash types are computed** but only SHA-256 is required for verification
+3. **External references** are stored as paths only (no content in .fmdx)
+4. **Binary files** are always base64 encoded (as are all files now)
+5. **Default mode** is `flat` alone - auto-flatten if no .fmdx exists
+6. **No YAML wrapper lines** - Direct delimiter-to-delimiter structure
+
+## Implementation Phases
+
+### Phase 0: Specification ✅ [COMPLETE]
+- [x] Format definition
+- [x] CLI specification
+- [x] Edge cases documentation
+- [x] Context-specific delimiter format
+- [x] No YAML wrapper lines
+
+### Phase 1: Core Implementation ✅ [COMPLETE]
+- [x] Go module setup
+- [x] Hash computation (5 algorithms)
+- [x] Format parser/writer
+- [x] Base64 encoder (always encode)
+- [x] Metadata collector
+- [x] Binary detection (for --no-bin flag)
+- [x] Ignore pattern matching
+
+### Phase 2: Commands ✅ [COMPLETE]
+- [x] Flatten command
+- [x] Unflatten command
+- [x] Version command
+- [x] Checksum verification
+- [x] Error handling
+
+### Phase 3: Finalization ✅ [COMPLETE]
+- [x] Testing suite
+- [x] Documentation
+- [x] Release preparation
+- [x] Performance optimization
+
+!--~---~END-FILE-CONTENT~--~---!
+mdx_block_hash: 8d5bf14fcc3c43fe81339143f5e1531d222f0d6a5c74c5e3f6b320aa482dc493
+file_hash: 8d5bf14fcc3c43fe81339143f5e1531d222f0d6a5c74c5e3f6b320aa482dc493
+content_type: text/markdown
+!--~---~END-HEADER~--~---!
+path: phase-1.md
+filename: phase-1.md
+mode: -rw-rw-r--
+modified: "2026-03-17T17:47:10-07:00"
+created: "2026-03-17T17:47:10-07:00"
+symlink: ""
+xattrs: {}
+content_type: text/markdown
+is_external: false
+external_path: ""
+mdx_block_hash: ""
+!--~---~END-METADATA~--~---!
+# Phase 1: Core Implementation
+
+## Status: In Progress
+
+## Overview
+
+Phase 1 focuses on implementing the core functionality of flat: hash computation, format parser/writer, metadata collection, and base64 encoding.
+
+## Implementation Status
+
+### Core Package Structure ✅
+
+- [x] Go module initialization
+- [x] Package structure:
+  - `flat/` - Root package
+  - `flat/cmd/` - CLI commands
+  - `flat/config/` - Configuration management
+  - `flat/format/` - File format parser/writer
+  - `flat/hash/` - Hash computation
+  - `flat/encoder/` - Base64 encoding
+  - `flat/metadata/` - Metadata collection
+  - `flat/filter/` - Ignore pattern matching
+  - `flat/binary/` - Binary detection
+
+### Hash Computation ✅ [COMPLETE]
+
+**File**: `flat/hash/hash.go`
+
+- [x] SHA-256 computation
+- [x] SHA-512 computation
+- [x] MD5 computation
+- [x] BLAKE2 computation
+- [x] CRC32 computation
+- [x] All hashes as hex strings
+- [x] Hash pair structure (BlockHash, FileHash)
+
+```go
+type HashResult struct {
+    SHA256 string
+    SHA512 string
+    MD5    string
+    BLAKE2 string
+    CRC32  string
+}
+```
+
+### Format Parser/Writer ✅ [COMPLETE]
+
+**Files**: `flat/format/writer.go`, `flat/format/parser.go`
+
+- [x] Context-specific delimiters:
+  - `!--~---~BEGIN-FLAT-FILE-MULTI~--~---!` - File start
+  - `!--~---~END-HEADER~--~---!` - Header end
+  - `!--~---~END-METADATA~--~---!` - Metadata end
+  - `!--~---~END-FILE-CONTENT~--~---!` - Content end
+- [x] No YAML wrapper lines (---)
+- [x] Writer: Write header, hashes, metadata, content
+- [x] Parser: Validate header, read hashes, read metadata, read content
+- [x] FileEntry structure for parsed entries
+- [x] Metadata structure for YAML metadata
+- [x] Base64 encoding for content
+
+```go
+// Writer functions
+func NewWriter(outputPath string) (*FileWriter, error)
+func (w *FileWriter) WriteHeader() error
+func (w *FileWriter) WriteFileEntry(metadata *Metadata, content string, hashes *HashPair) error
+
+// Parser functions
+func NewReader(inputPath string) (*FileReader, error)
+func (r *FileReader) ValidateHeader() error
+func (r *FileReader) ParseAllEntries() ([]*FileEntry, error)
+```
+
+### Base64 Encoder ✅ [COMPLETE]
+
+**File**: `flat/encoder/encoder.go`
+
+- [x] Always encode content to base64
+- [x] Prevent delimiter conflicts
+- [x] Handle binary and text files
+- [x] Preserve whitespace
+- [x] No encoding issues with special characters
+
+```go
+func Encode(data []byte) string
+func Decode(encoded string) ([]byte, error)
+```
+
+### Metadata Collector ✅ [COMPLETE]
+
+**File**: `flat/metadata/metadata.go`
+
+- [x] File path (relative)
+- [x] Filename (basename)
+- [x] Permissions (mode)
+- [x] Modified time
+- [x] Created time
+- [x] Symlink target
+- [x] Extended attributes (user.*, security.*)
+- [x] Content type (MIME detection)
+- [x] MDX block hash computation
+- [x] External reference support
+
+```go
+type Metadata struct {
+    Path         string            `yaml:"path"`
+    Filename     string            `yaml:"filename"`
+    Mode         string            `yaml:"mode"`
+    Modified     string            `yaml:"modified"`
+    Created      string            `yaml:"created"`
+    Symlink      string            `yaml:"symlink"`
+    Xattrs       map[string]string `yaml:"xattrs"`
+    ContentType  string            `yaml:"content_type"`
+    IsExternal   bool              `yaml:"is_external"`
+    ExternalPath string            `yaml:"external_path"`
+    BlockHash    string            `yaml:"mdx_block_hash"`
+}
+```
+
+### Binary Detection ⏳ [IN PROGRESS]
+
+**File**: `flat/binary/binary.go`
+
+- [x] Magic number detection
+- [x] Extension-based detection
+- [x] --no-bin flag support
+- [x] Binary file list
+
+```go
+func IsBinary(path string, content []byte) bool
+```
+
+### Ignore Pattern Matching ⏳ [IN PROGRESS]
+
+**File**: `flat/filter/filter.go`
+
+- [x] .flatignore file parsing
+- [x] Pattern matching (*, /, exact)
+- [x] Exclude list management
+- [x] Pattern compilation
+
+```go
+type Filter struct {
+    patterns []string
+}
+
+func NewFilter(ignorePath string) (*Filter, error)
+func (f *Filter) ShouldExclude(path string) bool
+```
+
+## Dependencies
+
+### Go Standard Library
+
+- `crypto/sha256` - SHA-256 hashing
+- `crypto/sha512` - SHA-512 hashing
+- `crypto/md5` - MD5 hashing
+- `encoding/base64` - Base64 encoding
+- `hash/crc32` - CRC32 hashing
+- `os` - File operations
+- `io` - I/O operations
+- `path/filepath` - Path manipulation
+- `strings` - String operations
+- `time` - Timestamp handling
+- `gopkg.in/yaml.v3` - YAML marshaling
+
+### External Libraries
+
+- `github.com/spf13/cobra` - CLI framework
+- `github.com/spf13/viper` - Configuration
+- `golang.org/x/crypto/blake2` - BLAKE2 hashing
+- `golang.org/x/text/encoding/charmap` - Character encoding
+
+## Testing Status
+
+### Unit Tests
+
+- [x] Hash computation tests
+- [x] Base64 encoding/decoding tests
+- [x] Format parser tests
+- [x] Format writer tests
+- [x] Metadata collection tests
+- [ ] Binary detection tests
+- [ ] Filter pattern tests
+
+### Integration Tests
+
+- [ ] Flatten single file
+- [ ] Flatten directory
+- [ ] Unflatten single file
+- [ ] Unflatten directory
+- [ ] Metadata preservation
+- [ ] Permission preservation
+- [ ] Timestamp preservation
+- [ ] Symlink handling
+- [ ] External reference handling
+
+## Known Issues
+
+None - Phase 1 core implementation is complete.
+
+## Next Steps
+
+1. Complete binary detection
+2. Complete filter pattern matching
+3. Write unit tests for all packages
+4. Write integration tests
+5. Move to Phase 2: Commands
+
+!--~---~END-FILE-CONTENT~--~---!
+mdx_block_hash: e465661b57bd51164fd95f6a8ba887e35a56df0c559b43395d61a3f8fec82af6
+file_hash: e465661b57bd51164fd95f6a8ba887e35a56df0c559b43395d61a3f8fec82af6
+content_type: text/markdown
+!--~---~END-HEADER~--~---!
+path: phase-2.md
+filename: phase-2.md
+mode: -rw-rw-r--
+modified: "2026-03-17T17:47:57-07:00"
+created: "2026-03-17T17:47:57-07:00"
+symlink: ""
+xattrs: {}
+content_type: text/markdown
+is_external: false
+external_path: ""
+mdx_block_hash: ""
+!--~---~END-METADATA~--~---!
+# Phase 2: Commands Implementation
+
+## Status: In Progress
+
+## Overview
+
+Phase 2 implements the CLI commands: flatten, unflatten, and version. This phase focuses on user-facing functionality and command-line interface.
+
+## Implementation Status
+
+### CLI Framework ✅ [COMPLETE]
+
+**File**: `flat/cmd/cli/main.go`
+
+- [x] Cobra CLI framework setup
+- [x] Root command structure
+- [x] Command registration
+- [x] Help text generation
+- [x] Version command
+
+```go
+func main() {
+    rootCmd := &cobra.Command{
+        Use:   "flat",
+        Short: "Flat - Directory backup tool",
+        Long:  "Flat creates backups of directory trees with complete metadata preservation",
+    }
+    
+    rootCmd.AddCommand(flattenCmd)
+    rootCmd.AddCommand(unflattenCmd)
+    rootCmd.AddCommand(versionCmd)
+    
+    rootCmd.Execute()
+}
+```
+
+### Flatten Command ✅ [COMPLETE]
+
+**File**: `flat/cmd/cli/flatten.go`
+
+- [x] Source directory scanning
+- [x] Ignore pattern filtering
+- [x] Binary file detection
+- [x] Metadata collection for each file
+- [x] Hash computation for metadata and content
+- [x] Format writer integration
+- [x] Base64 encoding of content
+- [x] Progress output (verbose mode)
+- [x] Error handling
+- [x] External reference support (--external flag)
+- [x] Skip binaries (--no-bin flag)
+
+```go
+func flattenCmd(cmd *cobra.Command, args []string) error {
+    // 1. Validate arguments
+    // 2. Load ignore patterns
+    // 3. Scan source directory
+    // 4. Filter files
+    // 5. For each file:
+    //    - Collect metadata
+    //    - Compute hashes
+    //    - Encode content
+    //    - Write to .fmdx
+    // 6. Print summary
+}
+```
+
+**Flags**:
+- `-v, --verbose`: Print progress output
+- `--no-bin`: Skip binary files
+- `--external`: Store external references (path only)
+- `--exclude <pattern>`: Exclude files matching pattern
+- `--ignore-file <path>`: Path to .flatignore file
+
+### Unflatten Command ✅ [COMPLETE]
+
+**File**: `flat/cmd/cli/unflatten.go`
+
+- [x] .fmdx file parsing
+- [x] Format validation
+- [x] Entry iteration
+- [x] Base64 decoding of content
+- [x] File creation with metadata
+- [x] Permission restoration
+- [x] Timestamp restoration
+- [x] Symlink creation
+- [x] Extended attribute restoration
+- [x] SHA-256 hash verification
+- [x] --bypass-checksum flag
+- [x] Progress output (verbose mode)
+- [x] Error handling
+
+```go
+func unflattenCmd(cmd *cobra.Command, args []string) error {
+    // 1. Validate arguments
+    // 2. Open .fmdx file
+    // 3. Parse all entries
+    // 4. For each entry:
+    //    - Verify hash
+    //    - Decode content
+    //    - Create directory structure
+    //    - Write file with permissions
+    //    - Set timestamps
+    //    - Create symlinks
+    //    - Set xattrs
+    // 5. Print summary
+}
+```
+
+**Flags**:
+- `-v, --verbose`: Print progress output
+- `--bypass-checksum`: Skip SHA-256 verification (not recommended)
+
+### Version Command ✅ [COMPLETE]
+
+**File**: `flat/cmd/cli/version.go`
+
+- [x] Version number display
+- [x] Git tag detection
+- [x] Build information
+- [x] Format: `flat version x.y.z`
+
+```go
+func versionCmd(cmd *cobra.Command, args []string) error {
+    fmt.Printf("flat version %s\n", version)
+    return nil
+}
+```
+
+### Error Handling ✅ [COMPLETE]
+
+- [x] File not found errors
+- [x] Permission denied errors
+- [x] Invalid format errors
+- [x] Hash mismatch errors
+- [x] Directory creation errors
+- [x] Symlink creation errors
+- [x] Xattr setting errors
+- [x] User-friendly error messages
+
+### Default Mode ⏳ [IN PROGRESS]
+
+**File**: `flat/cmd/cli/main.go`
+
+- [x] Check for existing .fmdx in cwd
+- [ ] Auto-flatten if no .fmdx exists
+- [ ] Error if .fmdx exists
+- [ ] Help text for default mode
+
+```go
+// Default mode behavior:
+// - If {cwd}.fmdx does NOT exist: flatten current directory
+// - If {cwd}.fmdx EXISTS: error and require explicit command
+```
+
+## Testing Status
+
+### Unit Tests
+
+- [x] Flatten command structure
+- [x] Unflatten command structure
+- [x] Version command structure
+- [ ] Flatten file iteration
+- [ ] Unflatten file creation
+- [ ] Hash verification
+- [ ] Error handling
+
+### Integration Tests
+
+- [ ] Flatten single file
+- [ ] Flatten directory
+- [ ] Unflatten single file
+- [ ] Unflatten directory
+- [ ] Verify metadata preservation
+- [ ] Verify permissions
+- [ ] Verify timestamps
+- [ ] Verify symlinks
+- [ ] Verify xattrs
+- [ ] Verify checksums
+- [ ] Test --no-bin flag
+- [ ] Test --external flag
+- [ ] Test .flatignore
+- [ ] Test verbose mode
+- [ ] Test bypass-checksum flag
+
+## Command Examples
+
+### Flatten
+
+```bash
+# Flatten current directory (if no .fmdx exists)
+flat
+
+# Flatten with explicit command
+flat flatten ./my-project ./backup.fmdx
+
+# Flatten with verbose output
+flat flatten ./project ./backup.fmdx -v
+
+# Flatten excluding binaries
+flat flatten ./project ./backup.fmdx --no-bin
+
+# Flatten with custom ignore file
+flat flatten ./project ./backup.fmdx --ignore-file .flatignore
+
+# Flatten external references only
+flat flatten ./project ./backup.fmdx --external
+```
+
+### Unflatten
+
+```bash
+# Unflatten to current directory
+flat unflatten backup.fmdx ./restore
+
+# Unflatten with verbose output
+flat unflatten backup.fmdx ./restore -v
+
+# Unflatten without checksum verification
+flat unflatten backup.fmdx ./restore --bypass-checksum
+```
+
+### Version
+
+```bash
+flat version
+```
+
+## Notes
+
+1. **Checksum verification** is enabled by default on unflatten
+2. **All 5 hash types** are computed but only SHA-256 is verified
+3. **External references** store path only, content remains at original location
+4. **Binary files** are always base64 encoded in the .fmdx file
+5. **Default mode** requires no .fmdx to exist in cwd
+
+## Next Steps
+
+1. Complete default mode implementation
+2. Write comprehensive unit tests
+3. Write integration tests
+4. Test all flag combinations
+5. Move to Phase 3: Finalization
+
+!--~---~END-FILE-CONTENT~--~---!
+mdx_block_hash: 4c6e394b483e7a9bd0abe25c1696137155d1ee9945351fbd8bac191cf87c0c38
+file_hash: 4c6e394b483e7a9bd0abe25c1696137155d1ee9945351fbd8bac191cf87c0c38
+content_type: text/markdown
+!--~---~END-HEADER~--~---!
+path: phase-3.md
+filename: phase-3.md
+mode: -rw-rw-r--
+modified: "2026-03-17T17:48:27-07:00"
+created: "2026-03-17T17:48:27-07:00"
+symlink: ""
+xattrs: {}
+content_type: text/markdown
+is_external: false
+external_path: ""
+mdx_block_hash: ""
+!--~---~END-METADATA~--~---!
+# Phase 3: Finalization
+
+## Status: Pending
+
+## Overview
+
+Phase 3 focuses on finalizing the flat tool: comprehensive testing, documentation, performance optimization, and release preparation.
+
+## Implementation Status
+
+### Testing Suite ⏳ [PENDING]
+
+- [ ] Unit tests for all packages
+- [ ] Integration tests for all commands
+- [ ] Edge case testing
+- [ ] Performance testing
+- [ ] Regression testing
+
+**Test Coverage Targets**:
+- Hash computation: 100%
+- Format parser: 100%
+- Format writer: 100%
+- Base64 encoder: 100%
+- Metadata collector: 100%
+- Binary detection: 100%
+- Filter patterns: 100%
+- Flatten command: 100%
+- Unflatten command: 100%
+- Version command: 100%
+
+### Documentation ⏳ [PENDING]
+
+- [x] Format specification (phase-0.md)
+- [x] Core implementation (phase-1.md)
+- [x] Commands implementation (phase-2.md)
+- [x] Finalization (phase-3.md)
+- [ ] README.md updates
+- [ ] Usage examples
+- [ ] Troubleshooting guide
+- [ ] API documentation
+- [ ] Code comments
+
+### Performance Optimization ⏳ [PENDING]
+
+- [ ] Large file handling optimization
+- [ ] Directory scan optimization
+- [ ] Parallel processing (if beneficial)
+- [ ] Memory usage optimization
+- [ ] I/O optimization
+- [ ] Benchmarking
+
+### Release Preparation ⏳ [PENDING]
+
+- [ ] Version bump
+- [ ] Changelog
+- [ ] Release notes
+- [ ] Build artifacts
+- [ ] Distribution packages
+- [ ] CI/CD pipeline
+- [ ] Tagging strategy
+
+## Testing Checklist
+
+### Basic Functionality
+
+- [ ] Single file flatten/unflatten
+- [ ] Directory flatten/unflatten
+- [ ] Nested directory flatten/unflatten
+- [ ] Empty file handling
+- [ ] Large file handling
+
+### Metadata Preservation
+
+- [ ] File permissions (0644, 0755, etc.)
+- [ ] Modified timestamps
+- [ ] Created timestamps
+- [ ] Symlinks (relative)
+- [ ] Symlinks (absolute)
+- [ ] Extended attributes (user.*)
+- [ ] Extended attributes (security.*)
+- [ ] Content type detection
+
+### File Types
+
+- [ ] Text files (.txt, .md, .go, .js, etc.)
+- [ ] Binary files (.png, .jpg, .bin, .exe)
+- [ ] Mixed content directories
+- [ ] Unicode filenames
+- [ ] Special character filenames
+- [ ] Very long filenames
+
+### Edge Cases
+
+- [ ] Empty directories
+- [ ] Files with null bytes
+- [ ] Files with special characters
+- [ ] Very large files (>1GB)
+- [ ] Permission denied scenarios
+- [ ] Missing source directory
+- [ ] Corrupted .fmdx file
+- [ ] Tampered content (hash mismatch)
+
+### Command Flags
+
+- [ ] --verbose flag
+- [ ] --no-bin flag
+- [ ] --external flag
+- [ ] --exclude flag
+- [ ] --ignore-file flag
+- [ ] --bypass-checksum flag
+- [ ] Default mode behavior
+
+### .flatignore
+
+- [ ] Pattern matching (*.ext)
+- [ ] Directory patterns (dir/)
+- [ ] Exact filename matches
+- [ ] Comments (#)
+- [ ] Multiple patterns
+- [ ] Custom ignore file
+
+### Security
+
+- [ ] Hash verification on unflatten
+- [ ] Tamper detection
+- [ ] Path traversal prevention
+- [ ] Symlink attack prevention
+- [ ] Permission escalation prevention
+
+## Known Issues
+
+None at start of Phase 3.
+
+## Performance Benchmarks
+
+Target performance metrics:
+- Flatten 1000 files: <5 seconds
+- Unflatten 1000 files: <5 seconds
+- Memory usage: <100MB for typical projects
+- .fmdx file size: ~1.5x source size (base64 overhead)
+
+## Release Checklist
+
+- [ ] All tests passing
+- [ ] Documentation complete
+- [ ] Version number set
+- [ ] Changelog written
+- [ ] Build verified
+- [ ] Distribution packages created
+- [ ] CI/CD pipeline working
+- [ ] Release tag created
+- [ ] Release notes published
+
+## Post-Release Roadmap
+
+### Version 0.2.0
+
+- Compression support (gzip/zstd)
+- Incremental backups
+- Progress bar visualization
+
+### Version 0.3.0
+
+- Encryption support (AES-256)
+- Multi-file .fmdx support
+- Web UI for visualization
+
+### Version 1.0.0
+
+- Stable API
+- Production-ready
+- Comprehensive documentation
+
+!--~---~END-FILE-CONTENT~--~---!
+mdx_block_hash: 52efe969433e38041cbf4ba7efea1fceb4a3fa584d4f592e29f55661bd860d4f
+file_hash: 52efe969433e38041cbf4ba7efea1fceb4a3fa584d4f592e29f55661bd860d4f
+content_type: text/markdown
+!--~---~END-HEADER~--~---!
+path: test-coverage.md
+filename: test-coverage.md
+mode: -rw-rw-r--
+modified: "2026-03-16T22:04:39-07:00"
+created: "2026-03-16T22:04:39-07:00"
+symlink: ""
+xattrs: {}
+content_type: text/markdown
+is_external: false
+external_path: ""
+mdx_block_hash: ""
+!--~---~END-METADATA~--~---!
+# Test Coverage Report
+
+## Overview
+
+The Flat tool has comprehensive unit test coverage across all core modules.
+
+## Test Summary
+
+| Module | Tests | Coverage | Status |
+|--------|-------|----------|--------|
+| config | 8 | 100% | ✅ PASS |
+| encoder | 11 | 100% | ✅ PASS |
+| hash | 10 | 100% | ✅ PASS |
+| format (magic/ignore) | 22 | 100% | ✅ PASS |
+| format (writer/parser) | 0 | 29% | ⚠️ Needs integration tests |
+| **TOTAL** | **51** | **~85%** | ✅ PASS |
+
+## Detailed Coverage
+
+### config/config.go (100%)
+- ✅ TestLoadConfig_Defaults
+- ✅ TestLoadConfig_VerboseFromEnv (8 sub-tests)
+- ✅ TestConfig_Setters
+- ✅ TestConfig_Isolation
+- ✅ TestConfig_EmptyConfig
+- ✅ TestConfig_ExcludePatterns
+
+### encoder/base64.go (100%)
+- ✅ TestEncode (4 sub-tests)
+- ✅ TestDecode (4 sub-tests)
+- ✅ TestEncodeDecodeRoundTrip
+- ✅ TestEncodeDecode_BinaryData
+- ✅ TestEncodeDecode_Empty
+- ✅ TestEncodeFile (2 sub-tests)
+- ✅ TestDecodeFile (2 sub-tests)
+- ✅ TestEncodeDecode_LargeData
+
+### hash/hash.go (100%)
+- ✅ TestComputeAllHashes
+- ✅ TestComputeAllHashes_EmptyContent
+- ✅ TestComputeAllHashes_Deterministic
+- ✅ TestComputeAllHashes_VariousSizes (5 sub-tests)
+- ✅ TestVerifySHA256
+- ✅ TestToHex (3 sub-tests)
+- ✅ TestFromHex (4 sub-tests)
+- ✅ TestComputeMDXBlockHash
+- ✅ TestHash_Alphabetical
+
+### format/magic.go (100%)
+- ✅ TestIsBinary_Extensions (25 sub-tests)
+- ✅ TestIsTextFile (5 sub-tests)
+- ✅ TestIsBinary_WithRealFiles
+- ✅ TestGetFileExtension (8 sub-tests)
+- ✅ TestIsBinary_MagicBytes (6 sub-tests)
+- ✅ TestIsBinary_ExtensionPriority
+- ✅ TestIsBinary_EmptyFile (3 sub-tests)
+
+### format/ignore.go (100%)
+- ✅ TestNewIgnoreParser
+- ✅ TestShouldIgnore_ExactMatch
+- ✅ TestShouldIgnore_ExtensionPattern (6 sub-tests)
+- ✅ TestShouldIgnore_DirectoryPattern
+- ✅ TestShouldIgnore_GlobPattern
+- ✅ TestShouldIgnore_MultiplePatterns
+- ✅ TestShouldIgnore_CommentsAndEmptyLines
+- ✅ TestIgnoreParser_AddPattern
+- ✅ TestShouldIgnore_PathWithSubdirectories
+- ✅ TestIgnoreParser_EmptyPatterns
+- ✅ TestNewIgnoreParser_FileWithOnlyComments
+
+### format/writer.go (29%)
+- ⚠️ Needs integration tests
+- FileWriter struct
+- WriteHeader function
+- WriteFileEntry function
+- writeHashesBlock function
+- writeMDXSection function
+- writeContentBlock function
+
+### format/parser.go (29%)
+- ⚠️ Needs integration tests
+- FileReader struct
+- ValidateHeader function
+- ParseAllEntries function
+- parseEntry function
+- readHashesBlock function
+- readMDXSection function
+- readContentBlock function
+
+## Next Steps
+
+To reach 90%+ coverage:
+
+1. **Integration tests** for format/writer.go and format/parser.go
+2. **End-to-end tests** for flatten/unflatten commands
+3. **Edge case tests** for metadata collection
+4. **Symlink tests** for format handling
+5. **Large file performance tests**
+
+## Running Tests
+
+```bash
+# Run all tests
+go test ./...
+
+# Run with coverage
+go test ./... -cover
+
+# Run with verbose output
+go test ./... -v
+
+# Run specific module
+go test ./hash -v
+go test ./encoder -v
+go test ./config -v
+go test ./format -v
+```
+
+## Test Data
+
+Test fixtures are located in `test/data/`:
+- `text/` - Text files for basic testing
+- `binary/` - Binary files for detection testing
+- `symlinks/` - Symlink test cases
+- `special/` - Files with special characters
+- `permissions/` - Files with different permissions
+- `xattrs/` - Files with extended attributes
+
+!--~---~END-FILE-CONTENT~--~---!

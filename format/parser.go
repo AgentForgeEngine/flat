@@ -40,8 +40,8 @@ func (r *FileReader) ValidateHeader() error {
 		return fmt.Errorf("empty file")
 	}
 	line := r.scanner.Text()
-	if line != "---BEGIN-FLAT-FILE-MULTI---" {
-		return fmt.Errorf("invalid file header: expected '---BEGIN-FLAT-FILE-MULTI---', got '%s'", line)
+	if line != HeaderStart {
+		return fmt.Errorf("invalid file header: expected '%s', got '%s'", HeaderStart, line)
 	}
 	return nil
 }
@@ -50,14 +50,28 @@ func (r *FileReader) ValidateHeader() error {
 func (r *FileReader) ParseAllEntries() ([]*FileEntry, error) {
 	var entries []*FileEntry
 
-	for r.scanner.Scan() {
+	// First entry: scanner is positioned after BEGIN marker (consumed by ValidateHeader)
+	for {
 		entry, err := r.parseEntry()
 		if err != nil {
 			return nil, err
 		}
-		if entry != nil {
-			entries = append(entries, entry)
+		if entry == nil {
+			break
 		}
+		entries = append(entries, entry)
+
+		// Look for next BEGIN marker
+		if !r.scanner.Scan() {
+			break
+		}
+		line := r.scanner.Text()
+		if line != HeaderStart {
+			// Not a BEGIN marker, stop
+			break
+		}
+		// Scanner is now at BEGIN marker, next iteration will call parseEntry
+		// which will read from after this BEGIN marker
 	}
 
 	if err := r.scanner.Err(); err != nil {
@@ -99,21 +113,24 @@ func (r *FileReader) parseEntry() (*FileEntry, error) {
 	return &FileEntry{
 		Metadata: metadata,
 		Content:  content,
+		Hashes:   hashesBlock,
 	}, nil
 }
 
-// readHashesBlock reads the hashes block
+// readHashesBlock reads the hashes block (including platform info)
 func (r *FileReader) readHashesBlock() (map[string]string, error) {
 	hashes := make(map[string]string)
 
 	for r.scanner.Scan() {
 		line := r.scanner.Text()
 
-		if strings.HasPrefix(line, "---MDX---") {
+		// Check for header end delimiter
+		if strings.TrimSpace(line) == HeaderEnd {
 			break
 		}
 
-		if strings.HasPrefix(line, "---") {
+		// Skip empty lines
+		if strings.TrimSpace(line) == "" {
 			continue
 		}
 
@@ -123,6 +140,8 @@ func (r *FileReader) readHashesBlock() (map[string]string, error) {
 			if len(parts) == 2 {
 				key := strings.TrimSpace(parts[0])
 				value := strings.TrimSpace(parts[1])
+				// Remove quotes from value
+				value = strings.Trim(value, "\"'")
 				hashes[key] = value
 			}
 		}
@@ -135,18 +154,15 @@ func (r *FileReader) readHashesBlock() (map[string]string, error) {
 func (r *FileReader) readMDXSection() (*Metadata, error) {
 	var yamlContent strings.Builder
 
-	// Skip the opening ---
-	if !r.scanner.Scan() {
-		return nil, fmt.Errorf("unexpected end of file in MDX section")
-	}
+	for r.scanner.Scan() {
+		line := r.scanner.Text()
 
-	// Read until ---MDX---
-	for !strings.HasPrefix(r.scanner.Text(), "---MDX---") {
-		yamlContent.WriteString(r.scanner.Text() + "\n")
-
-		if !r.scanner.Scan() {
-			return nil, fmt.Errorf("unexpected end of file in MDX section")
+		// Check for metadata end delimiter
+		if strings.TrimSpace(line) == MetadataEnd {
+			break
 		}
+
+		yamlContent.WriteString(line + "\n")
 	}
 
 	// Parse YAML
@@ -163,17 +179,18 @@ func (r *FileReader) readMDXSection() (*Metadata, error) {
 func (r *FileReader) readContentBlock() (string, error) {
 	var contentBuilder strings.Builder
 
-	// Skip the opening ---
-	if !r.scanner.Scan() {
-		return "", fmt.Errorf("unexpected end of file before content")
-	}
+	for r.scanner.Scan() {
+		line := r.scanner.Text()
 
-	// Read until ---MDX---
-	for !strings.HasPrefix(r.scanner.Text(), "---MDX---") {
-		contentBuilder.WriteString(r.scanner.Text() + "\n")
+		// Check for content end delimiter
+		if strings.TrimSpace(line) == FileContentEnd {
+			break
+		}
+
+		contentBuilder.WriteString(line + "\n")
 
 		if !r.scanner.Scan() {
-			// End of file without MDX marker
+			// End of file without section delimiter - this is OK for the last file
 			break
 		}
 	}
@@ -185,5 +202,5 @@ func (r *FileReader) readContentBlock() (string, error) {
 type FileEntry struct {
 	Metadata *Metadata
 	Content  string
-	Hashes   *HashResult
+	Hashes   map[string]string
 }

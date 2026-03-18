@@ -19,19 +19,12 @@ A CLI tool to flatten directory trees into a single `.fmdx` file and unflatten t
 ```bash
 git clone https://github.com/yourusername/flat.git
 cd flat
-make build
-```
-
-Or with mage:
-```bash
 mage build
 ```
 
 ### Install to GOPATH
 
 ```bash
-make install
-# or
 mage install
 ```
 
@@ -115,35 +108,37 @@ flat version
 ### Structure
 
 ```
----BEGIN-FLAT-FILE-MULTI---
----
+!--~---~BEGIN-FLAT-FILE-MULTI~--~---!
 mdx_block_hash: <sha256>
 file_hash: <sha256>
 content_type: <mime>
----
----MDX---
----
-```yaml
+!--~---~END-HEADER~--~---!
 path: "relative/path"
 filename: "name.ext"
 mode: "0644"
 modified: "2026-03-16T12:00:00Z"
 created: "2026-03-16T10:00:00Z"
 symlink: ""
-xattrs:
-  user.comment: "test"
+xattrs: {}
 content_type: "text/plain"
 is_external: false
----
+!--~---~END-METADATA~--~---!
 base64-encoded-content
----MDX---
+!--~---~END-FILE-CONTENT~--~---!
 ```
 
 ### Delimiters
 
-- **Header**: `---BEGIN-FLAT-FILE-MULTI---`
-- **MDX Section**: `---MDX---`
-- **YAML Wrapper**: `---`
+All delimiters use context-specific separators to prevent conflicts with content:
+
+| Delimiter | Purpose |
+|-----------|---------|
+| `!--~---~BEGIN-FLAT-FILE-MULTI~--~---!` | Marks start of .fmdx file |
+| `!--~---~END-HEADER~--~---!` | Marks end of header block |
+| `!--~---~END-METADATA~--~---!` | Marks end of metadata block |
+| `!--~---~END-FILE-CONTENT~--~---!` | Marks end of file content |
+
+**No YAML wrapper lines** - Direct delimiter-to-delimiter structure
 
 ### Metadata Fields
 
@@ -161,13 +156,15 @@ base64-encoded-content
 
 ### Checksum Algorithms
 
-All 5 hash algorithms are computed:
+All 5 hash algorithms are computed and stored:
 
 - **SHA-256** (32 bytes) - Primary verification
 - **SHA-512** (64 bytes) - Extra security
 - **MD5** (16 bytes) - Fast verification
 - **BLAKE2** (32 bytes) - Modern alternative
 - **CRC32** (4 bytes) - Quick error detection
+
+All hashes are stored as hexadecimal strings.
 
 ## .flatignore
 
@@ -236,10 +233,22 @@ go test ./...
 - Zero-byte files are handled correctly
 - Content section is empty in .fmdx
 
+### Content Encoding
+
+All content is **always base64 encoded** to prevent:
+- Delimiter conflicts
+- Binary data corruption
+- Encoding issues with special characters
+- Whitespace preservation problems
+
+This means:
+- Text files are encoded (not stored as plain text)
+- Binary files are encoded
+- All content is safe for storage in .fmdx
+
 ### Binary Files
 - Detected using magic bytes + extension
-- Base64 encoded for safe storage
-- Can be skipped with `--no-bin`
+- Can be skipped with `--no-bin` (but still encoded if included)
 
 ### Symlinks
 - Symlink targets are stored (not dereferenced)
