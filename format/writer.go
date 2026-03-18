@@ -188,3 +188,43 @@ type HashPair struct {
 	BlockHash *HashResult // Hash of YAML metadata block
 	FileHash  *HashResult // Hash of file content
 }
+
+// DirectoryMetadata holds metadata for a directory entry
+type DirectoryMetadata struct {
+	Path     string `yaml:"path"`
+	Type     string `yaml:"type"`
+	Summary  string `yaml:"summary"`
+	Created  string `yaml:"created"`
+	Modified string `yaml:"modified"`
+}
+
+// WriteDirectoryEntry writes a directory entry to the .fmdx
+func (w *FileWriter) WriteDirectoryEntry(dirMeta *DirectoryMetadata) error {
+	// Write header with content type
+	_, err := fmt.Fprintln(w.writer, "mdx_block_hash: ")
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(w.writer, "content_type: text/plain")
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(w.writer, HeaderEnd)
+	if err != nil {
+		return err
+	}
+
+	// Write directory metadata
+	yamlData, err := yaml.Marshal(dirMeta)
+	if err != nil {
+		return fmt.Errorf("failed to marshal directory metadata: %w", err)
+	}
+	_, err = fmt.Fprint(w.writer, string(yamlData))
+	if err != nil {
+		return err
+	}
+
+	// Write directory end delimiter
+	_, err = fmt.Fprintln(w.writer, "!--~---~END-DIRECTORY~--~---!")
+	return err
+}

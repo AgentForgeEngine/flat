@@ -9,6 +9,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	DirectoryEnd = "!--~---~END-DIRECTORY~--~---!"
+)
+
+// DirectoryEntry represents a directory entry in the .fmdx
+type DirectoryEntry struct {
+	Metadata *DirectoryMetadata
+}
+
 // FileReader handles reading .fmdx files
 type FileReader struct {
 	inputPath string
@@ -52,26 +61,34 @@ func (r *FileReader) ParseAllEntries() ([]*FileEntry, error) {
 
 	// First entry: scanner is positioned after BEGIN marker (consumed by ValidateHeader)
 	for {
-		entry, err := r.parseEntry()
-		if err != nil {
-			return nil, err
-		}
-		if entry == nil {
-			break
-		}
-		entries = append(entries, entry)
-
-		// Look for next BEGIN marker
+		// Look for next entry (BEGIN marker or directory metadata)
 		if !r.scanner.Scan() {
 			break
 		}
 		line := r.scanner.Text()
-		if line != HeaderStart {
-			// Not a BEGIN marker, stop
-			break
+
+		if line == HeaderStart {
+			// File entry - parse it
+			// Scanner is already positioned after BEGIN marker, so we need to read from here
+			// But parseEntry expects to read hashes block first, which includes BEGIN marker
+			// So we need a different approach - push the line back and call parseEntry
+			// Since scanner doesn't support Unscan, we'll read the entry manually
+			entry, err := r.parseEntryFromLine(line)
+			if err != nil {
+				return nil, err
+			}
+			if entry != nil {
+				entries = append(entries, entry)
+			}
+		} else if strings.HasPrefix(line, "path:") || strings.HasPrefix(line, "type:") {
+			// Could be directory entry - try to parse it
+			// For now, skip directory entries in this function
+			// They'll be handled separately
+			continue
+		} else {
+			// Unknown line, skip
+			continue
 		}
-		// Scanner is now at BEGIN marker, next iteration will call parseEntry
-		// which will read from after this BEGIN marker
 	}
 
 	if err := r.scanner.Err(); err != nil {
@@ -79,6 +96,74 @@ func (r *FileReader) ParseAllEntries() ([]*FileEntry, error) {
 	}
 
 	return entries, nil
+}
+
+// parseEntryFromLine parses a file entry starting from a given line
+func (r *FileReader) parseEntryFromLine(firstLine string) (*FileEntry, error) {
+	// Read hashes block starting from firstLine
+	hashesBlock, err := r.readHashesBlockFromLine(firstLine)
+	if err != nil {
+		return nil, err
+	}
+	if hashesBlock == nil || len(hashesBlock) == 0 {
+		return nil, nil
+	}
+
+	// Read metadata
+	metadata, err := r.readMDXSection()
+	if err != nil {
+		return nil, err
+	}
+	if metadata == nil {
+		return nil, nil
+	}
+
+	// Read content
+	content, err := r.readContentBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return &FileEntry{
+		Metadata: metadata,
+		Content:  content,
+		Hashes:   hashesBlock,
+	}, nil
+}
+
+// readHashesBlockFromLine reads hashes block starting from firstLine
+func (r *FileReader) readHashesBlockFromLine(firstLine string) (map[string]string, error) {
+	hashes := make(map[string]string)
+	var yamlContent strings.Builder
+	if firstLine != "" {
+		yamlContent.WriteString(firstLine + "\n")
+	}
+
+	for r.scanner.Scan() {
+		line := r.scanner.Text()
+		if strings.TrimSpace(line) == HeaderEnd {
+			break
+		}
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		yamlContent.WriteString(line + "\n")
+	}
+
+	// Parse YAML
+	for _, line := range strings.Split(yamlContent.String(), "\n") {
+		if strings.Contains(line, ":") {
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				value := strings.TrimSpace(parts[1])
+				value = strings.Trim(value, "\"'")
+				hashes[key] = value
+			}
+		}
+	}
+
+	return hashes, nil
 }
 
 // parseEntry parses a single file entry
@@ -203,4 +288,57 @@ type FileEntry struct {
 	Metadata *Metadata
 	Content  string
 	Hashes   map[string]string
+}
+
+// ParseAllDirectories parses all directory entries from the .fmdx
+func (r *FileReader) ParseAllDirectories() ([]*DirectoryEntry, error) {
+	var dirEntries []*DirectoryEntry
+
+	// Reset scanner to beginning
+	f, err := os.Open(r.inputPath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	
+	scanner := bufio.NewScanner(f)
+	
+	// Skip header
+	for scanner.Scan() {
+		if strings.TrimSpace(scanner.Text()) == HeaderEnd {
+			break
+		}
+	}
+	
+	// Parse entries
+	for scanner.Scan() {
+		line := scanner.Text()
+		
+		if strings.HasPrefix(line, "path:") || strings.HasPrefix(line, "type:") {
+			// Directory entry
+			var yamlContent strings.Builder
+			yamlContent.WriteString(line + "\n")
+			
+			for scanner.Scan() {
+				line := scanner.Text()
+				if strings.TrimSpace(line) == DirectoryEnd {
+					break
+				}
+				yamlContent.WriteString(line + "\n")
+			}
+			
+			var dirMeta DirectoryMetadata
+			err := yaml.Unmarshal([]byte(yamlContent.String()), &dirMeta)
+			if err != nil {
+				// Skip invalid entries
+				continue
+			}
+			
+			dirEntries = append(dirEntries, &DirectoryEntry{
+				Metadata: &dirMeta,
+			})
+		}
+	}
+	
+	return dirEntries, scanner.Err()
 }
