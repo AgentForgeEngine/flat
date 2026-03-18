@@ -22,24 +22,24 @@ type DirectoryMetadata struct {
 	Modified string `yaml:"modified"`
 }
 
-// CollectDirectory gathers metadata for a directory with .flatdir file
+// CollectDirectory gathers metadata for a directory with .agent file
 func CollectDirectory(dirPath string, relPath string) (*DirectoryMetadata, error) {
 	stat, err := os.Lstat(dirPath)
 	if err != nil {
 		return nil, err
 	}
 
-	// Read .flatdir file
-	flatdirPath := filepath.Join(dirPath, ".flatdir")
-	flatdirContent, err := os.ReadFile(flatdirPath)
+	// Read .agent file
+	agentPath := filepath.Join(dirPath, ".agent")
+	agentContent, err := os.ReadFile(agentPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read .flatdir: %w", err)
+		return nil, fmt.Errorf("failed to read .agent: %w", err)
 	}
 
 	// Parse YAML
 	var dirMeta DirectoryMetadata
-	if err := yaml.Unmarshal(flatdirContent, &dirMeta); err != nil {
-		return nil, fmt.Errorf("failed to parse .flatdir: %w", err)
+	if err := yaml.Unmarshal(agentContent, &dirMeta); err != nil {
+		return nil, fmt.Errorf("failed to parse .agent: %w", err)
 	}
 
 	// Validate path
@@ -54,7 +54,7 @@ func CollectDirectory(dirPath string, relPath string) (*DirectoryMetadata, error
 
 	// Validate summary
 	if dirMeta.Summary == "" {
-		return nil, fmt.Errorf("summary is required in .flatdir")
+		return nil, fmt.Errorf("summary is required in .agent")
 	}
 
 	// Check summary size
@@ -80,16 +80,16 @@ func CollectDirectory(dirPath string, relPath string) (*DirectoryMetadata, error
 	return &dirMeta, nil
 }
 
-// ReadFlatdir reads and validates a .flatdir file
-func ReadFlatdir(flatdirPath string) (*DirectoryMetadata, error) {
-	content, err := os.ReadFile(flatdirPath)
+// ReadFlatdir reads and validates a .agent file
+func ReadFlatdir(agentPath string) (*DirectoryMetadata, error) {
+	content, err := os.ReadFile(agentPath)
 	if err != nil {
 		return nil, err
 	}
 
 	var dirMeta DirectoryMetadata
 	if err := yaml.Unmarshal(content, &dirMeta); err != nil {
-		return nil, fmt.Errorf("failed to parse .flatdir: %w", err)
+		return nil, fmt.Errorf("failed to parse .agent: %w", err)
 	}
 
 	// Validate required fields
@@ -111,20 +111,20 @@ func ReadFlatdir(flatdirPath string) (*DirectoryMetadata, error) {
 	return &dirMeta, nil
 }
 
-// WriteFlatdir writes a .flatdir file with directory summary
+// WriteFlatdir writes a .agent file with directory summary
 func WriteFlatdir(dirPath string, summary string) error {
-	flatdirPath := filepath.Join(dirPath, ".flatdir")
+	agentPath := filepath.Join(dirPath, ".agent")
 
 	content, err := yaml.Marshal(DirectoryMetadata{
 		Type:    "directory",
 		Summary: summary,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to marshal .flatdir: %w", err)
+		return fmt.Errorf("failed to marshal .agent: %w", err)
 	}
 
-	if err := os.WriteFile(flatdirPath, content, 0644); err != nil {
-		return fmt.Errorf("failed to write .flatdir: %w", err)
+	if err := os.WriteFile(agentPath, content, 0644); err != nil {
+		return fmt.Errorf("failed to write .agent: %w", err)
 	}
 
 	return nil
@@ -158,16 +158,16 @@ func WriteAgents(dirPath string, dirMeta *DirectoryMetadata) error {
 	return nil
 }
 
-// HasFlatdir checks if a directory has a .flatdir file
+// HasFlatdir checks if a directory has a .agent file
 func HasFlatdir(dirPath string) bool {
-	flatdirPath := filepath.Join(dirPath, ".flatdir")
-	_, err := os.Stat(flatdirPath)
+	agentPath := filepath.Join(dirPath, ".agent")
+	_, err := os.Stat(agentPath)
 	return err == nil
 }
 
-// FindFlatdirs recursively finds all directories with .flatdir files
+// FindFlatdirs recursively finds all directories with .agent files
 func FindFlatdirs(rootPath string) ([]string, error) {
-	var flatdirs []string
+	var agents []string
 
 	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -180,12 +180,12 @@ func FindFlatdirs(rootPath string) ([]string, error) {
 				if err != nil {
 					return err
 				}
-				flatdirs = append(flatdirs, relPath)
+				agents = append(agents, relPath)
 			}
 		}
 
 		return nil
 	})
 
-	return flatdirs, err
+	return agents, err
 }
